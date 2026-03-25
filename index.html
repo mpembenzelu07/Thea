@@ -3,16 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>THEA 2.0 · Total Human Engagement Analyst | Tanzania</title>
+    <title>THEA 3.0 · Total Human Engagement Analyst | Tanzania</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Chart.js 4 -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- Leaflet for interactive map -->
+    <!-- Leaflet for map -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Moment.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <!-- Notyf for toast notifications (lightweight) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -34,6 +37,7 @@
             --neutral: #e6a017;
             --sidebar-bg: #0b2b26;
             --sidebar-text: #e0f2e9;
+            --toast-bg: #1e293b;
         }
         body.dark {
             --bg: #0f172a;
@@ -43,10 +47,11 @@
             --border: #334155;
             --primary: #2d7a64;
             --primary-dark: #1f5e4c;
+            --toast-bg: #334155;
         }
         body {
             background: var(--bg);
-            transition: background 0.2s, color 0.2s;
+            transition: background 0.2s;
         }
 
         /* Layout */
@@ -63,7 +68,6 @@
             overflow-y: auto;
             transition: transform 0.2s;
             z-index: 20;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
         }
         .main {
             flex: 1;
@@ -113,8 +117,16 @@
         }
         .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 24px; }
         .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; }
         .stat-number { font-size: 2.5rem; font-weight: 800; color: var(--primary); }
-        .badge { background: #eef2fa; padding: 4px 12px; border-radius: 40px; font-size: 0.75rem; color: #1f2e3a; }
+        .badge {
+            background: #eef2fa;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            color: #1f2e3a;
+        }
+        .dark .badge { background: #2d3748; color: #e2e8f0; }
         .message-item {
             background: var(--card-bg);
             border-radius: 20px;
@@ -154,13 +166,56 @@
             border-radius: 20px;
             margin-bottom: 20px;
         }
-        .dark .alert-banner { background: #2d2a1f; border-left-color: #e6a017; }
+        .dark .alert-banner { background: #2d2a1f; }
+        .word-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+        .word-cloud span {
+            display: inline-block;
+            cursor: pointer;
+            transition: 0.1s;
+            color: var(--primary);
+        }
+        .word-cloud span:hover { transform: scale(1.05); }
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .filter-bar select, .filter-bar input {
+            width: auto;
+            min-width: 120px;
+        }
+        .notification-bell {
+            position: relative;
+            cursor: pointer;
+        }
+        .badge-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #c7362b;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         footer { text-align: center; font-size: 0.7rem; margin-top: 40px; color: var(--text-light); }
         @media (max-width: 900px) {
             .sidebar { transform: translateX(-100%); }
             .main { margin-left: 0; }
             .app.show-sidebar .sidebar { transform: translateX(0); }
-            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
         }
         .theme-toggle {
             position: fixed;
@@ -177,13 +232,32 @@
             z-index: 30;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 40;
+            background: var(--primary);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+        }
+        @media (max-width: 900px) {
+            .mobile-menu-btn { display: flex; }
+        }
     </style>
 </head>
 <body>
+<div class="mobile-menu-btn" id="mobileMenuBtn"><i class="fas fa-bars"></i></div>
 <div class="app" id="app">
     <div class="sidebar">
         <div class="logo-area">
-            <h1><i class="fas fa-chart-network"></i> THEA</h1>
+            <h1><i class="fas fa-chart-network"></i> THEA 3.0</h1>
             <p>Total Human Engagement Analyst</p>
             <p style="font-size:0.7rem; opacity:0.7;">Tanzania · AI‑powered governance</p>
         </div>
@@ -204,34 +278,43 @@
         <!-- DASHBOARD -->
         <div id="dashboard" class="page active-page">
             <div class="alert-banner" id="anomalyBanner"><i class="fas fa-bell"></i> AI anomaly detection active – monitoring real‑time spikes</div>
-            <div class="grid-3">
+            <div class="grid-4">
                 <div class="card"><h3><i class="fas fa-inbox"></i> Total Interactions</h3><div class="stat-number" id="statTotal">0</div><span>+12% vs last week</span></div>
                 <div class="card"><h3><i class="fas fa-smile"></i> Citizen Sentiment</h3><div class="stat-number" id="statSentiment">0%</div><span>positive ratio</span></div>
-                <div class="card"><h3><i class="fas fa-tags"></i> Active Topics</h3><div class="stat-number" id="statTopics">0</div><span>water, health, infra, edu</span></div>
+                <div class="card"><h3><i class="fas fa-tags"></i> Active Topics</h3><div class="stat-number" id="statTopics">0</div></div>
+                <div class="card"><h3><i class="fas fa-chart-line"></i> Alert Level</h3><div class="stat-number" id="alertLevel">Low</div><span>based on anomalies</span></div>
             </div>
             <div class="grid-2">
                 <div class="card"><div class="card-header"><h2><i class="fas fa-chart-pie"></i> Sentiment Breakdown</h2></div><canvas id="dashboardDonut" height="180"></canvas></div>
                 <div class="card"><div class="card-header"><h2><i class="fas fa-fire"></i> Top Issues</h2></div><div id="topTopicsDashboard"></div></div>
             </div>
-            <div class="card"><div class="card-header"><h2><i class="fas fa-map-marked-alt"></i> Regional Heatmap (volume)</h2></div><div id="regionHeatmapDashboard" class="flex-between" style="flex-wrap:wrap; gap:8px;"></div></div>
             <div class="card"><div class="card-header"><h2><i class="fas fa-chart-line"></i> 7-Day Engagement Trend</h2></div><canvas id="trendChartMain" height="100"></canvas></div>
+            <div class="card"><div class="card-header"><h2><i class="fas fa-cloud"></i> Word Cloud (frequent terms)</h2></div><div id="wordCloudContainer" class="word-cloud"></div></div>
         </div>
 
-        <!-- LIVE FEED -->
+        <!-- LIVE FEED with filters -->
         <div id="livefeed" class="page">
             <div class="card">
-                <div class="flex-between"><h2><i class="fas fa-stream"></i> Real‑time citizen messages</h2><div><input type="text" id="feedFilter" placeholder="Filter by keyword..." style="width:200px;"></div></div>
+                <div class="flex-between"><h2><i class="fas fa-stream"></i> Real‑time citizen messages</h2><div class="notification-bell" id="notificationBell"><i class="fas fa-bell"></i><span id="newMsgCount" class="badge-count" style="display:none;">0</span></div></div>
+                <div class="filter-bar">
+                    <input type="text" id="feedKeyword" placeholder="Keyword filter" style="flex:1;">
+                    <select id="feedSentiment"><option value="">All sentiments</option><option value="positive">Positive</option><option value="negative">Negative</option><option value="neutral">Neutral</option></select>
+                    <select id="feedTopic"><option value="">All topics</option><option value="water">Water</option><option value="health">Health</option><option value="infrastructure">Infrastructure</option><option value="education">Education</option><option value="energy">Energy</option><option value="connectivity">Connectivity</option></select>
+                    <select id="feedRegion"><option value="">All regions</option></select>
+                </div>
                 <div id="liveFeedContainer" style="max-height: 550px; overflow-y: auto; margin-top: 20px;"></div>
             </div>
         </div>
 
-        <!-- AI ANALYTICS -->
+        <!-- AI ANALYTICS with trending topics and sentiment by region -->
         <div id="analytics" class="page">
             <div class="grid-2">
                 <div class="card"><h2><i class="fas fa-chart-line"></i> Sentiment trend (14 days)</h2><canvas id="sentimentTrendLine" height="150"></canvas></div>
                 <div class="card"><h2><i class="fas fa-chart-bar"></i> Topic distribution</h2><canvas id="topicBarChart" height="150"></canvas></div>
             </div>
+            <div class="card"><h2><i class="fas fa-chart-line"></i> Trending Topics (last 7 days)</h2><canvas id="trendingTopicsChart" height="120"></canvas></div>
             <div class="card"><h2><i class="fas fa-robot"></i> AI predictive insights</h2><div id="aiInsightsText"></div></div>
+            <div class="card"><h2><i class="fas fa-chart-simple"></i> Sentiment by Region</h2><div id="sentimentByRegion" class="grid-2"></div></div>
             <div class="card"><h2><i class="fas fa-map"></i> Interactive geospatial view</h2><div id="leafletMap" class="map-container"></div></div>
         </div>
 
@@ -255,14 +338,14 @@
                 <div class="grid-2">
                     <div><textarea id="msgText" rows="3" placeholder="Type your message in Swahili/English..."></textarea></div>
                     <div><select id="msgChannel"><option>SMS</option><option>Voice Call</option><option>WhatsApp</option><option>Web</option></select>
-                    <input type="text" id="msgRegion" placeholder="Region (optional)" list="regionList"><datalist id="regionList"><option>Dar es Salaam</option><option>Arusha</option><option>Mwanza</option><option>Mbeya</option><option>Dodoma</option><option>Zanzibar</option></datalist>
+                    <input type="text" id="msgRegion" placeholder="Region (optional)" list="regionList"><datalist id="regionList"></datalist>
                     <button id="submitMsgBtn" style="width:100%; margin-top:12px;"><i class="fas fa-paper-plane"></i> Submit & analyse</button></div>
                 </div>
             </div>
             <div class="card"><h2><i class="fas fa-history"></i> Recent contributions</h2><div id="recentContributions"></div></div>
         </div>
 
-        <!-- SYSTEM HEALTH -->
+        <!-- SYSTEM HEALTH with metrics -->
         <div id="system" class="page">
             <div class="grid-2">
                 <div class="card"><h2><i class="fas fa-microchip"></i> Platform Status</h2><div id="sysStatus">✅ Data ingestion active<br>✅ NLP engine (Swahili/EN)<br>✅ Kafka streams healthy<br>✅ Geospatial API online</div></div>
@@ -270,22 +353,26 @@
             </div>
             <div class="card"><h2><i class="fas fa-gavel"></i> Compliance & Privacy</h2><p>⚖️ Tanzania Personal Data Protection Act 2022 – full compliance. Data pseudonymized, consent ledger active. All analytics on aggregated data.</p></div>
         </div>
-        <footer>© 2025 THEA – Next‑gen citizen listening platform | Real‑time AI | Privacy by design</footer>
+        <footer>© 2025 THEA 3.0 – Next‑gen citizen listening platform | Real‑time AI | Privacy by design</footer>
     </div>
     <div class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></div>
 </div>
 
 <script>
-    // ---------- DATA LAYER ----------
+    // ======================= DATA & GLOBALS =======================
     let messages = [];
     const REGIONS = ["Dar es Salaam","Arusha","Mwanza","Mbeya","Dodoma","Zanzibar","Tanga","Morogoro","Kilimanjaro","Tabora"];
+    const notyf = new Notyf({ duration: 3000, position: { x: 'right', y: 'top' } });
+    let newMessageCount = 0;
+    let simulationInterval = null;
+    let leafletMap = null;
 
-    // AI analysis: sentiment + topic + intent
+    // Helper: AI analysis
     function analyzeMessage(text) {
         const lower = text.toLowerCase();
         let pos = 0, neg = 0;
-        const posWords = ["asante","shukran","good","great","excellent","nzuri","safi","thank","helpful","bora","nimefurahia"];
-        const negWords = ["shida","tatizo","broken","haribika","mbaya","fail","not working","dawa hazipo","umeme","malalamiko"];
+        const posWords = ["asante","shukran","good","great","excellent","nzuri","safi","thank","helpful","bora","nimefurahia","pongezi"];
+        const negWords = ["shida","tatizo","broken","haribika","mbaya","fail","not working","dawa hazipo","umeme","malalamiko","tatanishi"];
         posWords.forEach(w => { if(lower.includes(w)) pos++; });
         negWords.forEach(w => { if(lower.includes(w)) neg++; });
         let sentiment = "neutral";
@@ -301,6 +388,7 @@
         return { sentiment, topic };
     }
 
+    function persistData() { localStorage.setItem("thea_messages", JSON.stringify(messages)); }
     function loadData() {
         const stored = localStorage.getItem("thea_messages");
         if(stored) { messages = JSON.parse(stored); }
@@ -316,9 +404,8 @@
             persistData();
         }
     }
-    function persistData() { localStorage.setItem("thea_messages", JSON.stringify(messages)); }
 
-    function addMessage(text, channel, region) {
+    function addMessage(text, channel, region, isSimulated = false) {
         if(!text.trim()) return;
         const analysis = analyzeMessage(text);
         const newMsg = {
@@ -333,10 +420,41 @@
         messages.unshift(newMsg);
         persistData();
         refreshAll();
+        if(!isSimulated) notyf.success("Message submitted & analysed!");
+        else {
+            newMessageCount++;
+            updateNotificationBell();
+            notyf.success(`New ${channel} message: "${text.substring(0,40)}..."`);
+        }
     }
 
-    // --- UI refresh functions ---
-    let donutChart, trendMain, sentimentChart, topicChart, leafletMap;
+    function updateNotificationBell() {
+        const countSpan = document.getElementById("newMsgCount");
+        if(newMessageCount > 0) {
+            countSpan.innerText = newMessageCount;
+            countSpan.style.display = "flex";
+        } else {
+            countSpan.style.display = "none";
+        }
+    }
+    function resetNotification() { newMessageCount = 0; updateNotificationBell(); }
+
+    // Simulate real-time data: add random message every 20 sec
+    function startSimulation() {
+        const sampleTexts = [
+            "Bomba la maji limeharibika tena", "Huduma za afya zimeboreka, asante!", "Barabara zetu zimejaa mashimo", "Vitabu vya shule havitoshi",
+            "Umeme umekatika kwa siku tatu", "Network ya simu ni dhaifu hapa", "Maji safi yamefika! shukran", "Hospitali haina dawa za malaria",
+            "Elimu ya bure inasaidia lakini walimu hawatoshi", "Tunahitaji miundombinu bora"
+        ];
+        setInterval(() => {
+            const randomText = sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
+            const randomChannel = ["SMS","Voice Call","WhatsApp","Web"][Math.floor(Math.random()*4)];
+            const randomRegion = REGIONS[Math.floor(Math.random()*REGIONS.length)];
+            addMessage(randomText, randomChannel, randomRegion, true);
+        }, 20000);
+    }
+
+    // ========== UI Refresh ==========
     function refreshAll() {
         updateStats();
         renderLiveFeed();
@@ -346,7 +464,11 @@
         renderRecentContributions();
         updateAnomalyAlert();
         updateAIInsights();
+        renderWordCloud();
+        renderTrendingTopicsChart();
+        renderSentimentByRegion();
         if(leafletMap) updateMapMarkers();
+        populateRegionFilters();
     }
 
     function updateStats() {
@@ -357,21 +479,29 @@
         document.getElementById("statSentiment").innerText = `${posPercent}%`;
         const topicsSet = new Set(messages.map(m=>m.topic));
         document.getElementById("statTopics").innerText = topicsSet.size;
-
-        const freq = new Map();
-        messages.forEach(m=>freq.set(m.topic, (freq.get(m.topic)||0)+1));
-        const sorted = Array.from(freq.entries()).sort((a,b)=>b[1]-a[1]).slice(0,5);
-        const container = document.getElementById("topTopicsDashboard");
-        if(container) container.innerHTML = sorted.map(([t,c])=>`<div class="flex-between"><span>${t.toUpperCase()}</span><span class="badge">${c}</span></div>`).join('');
+        // alert level based on negative ratio
+        const neg = messages.filter(m=>m.sentiment==="negative").length;
+        const negRatio = total===0?0:(neg/total);
+        let alertLevel = "Low";
+        if(negRatio > 0.3) alertLevel = "High";
+        else if(negRatio > 0.15) alertLevel = "Medium";
+        document.getElementById("alertLevel").innerHTML = alertLevel;
     }
 
     function renderLiveFeed() {
-        const filter = document.getElementById("feedFilter")?.value.toLowerCase() || "";
-        let filtered = messages;
-        if(filter) filtered = messages.filter(m=>m.text.toLowerCase().includes(filter));
+        const keyword = document.getElementById("feedKeyword")?.value.toLowerCase() || "";
+        const sentiment = document.getElementById("feedSentiment")?.value;
+        const topic = document.getElementById("feedTopic")?.value;
+        const region = document.getElementById("feedRegion")?.value;
+        let filtered = messages.filter(m => {
+            if(keyword && !m.text.toLowerCase().includes(keyword)) return false;
+            if(sentiment && m.sentiment !== sentiment) return false;
+            if(topic && m.topic !== topic) return false;
+            if(region && m.region !== region) return false;
+            return true;
+        });
         const feedDiv = document.getElementById("liveFeedContainer");
-        if(!feedDiv) return;
-        if(filtered.length===0) { feedDiv.innerHTML="<div class='card'>No messages match</div>"; return; }
+        if(filtered.length===0) { feedDiv.innerHTML="<div class='card'>No messages match filters</div>"; return; }
         feedDiv.innerHTML = filtered.map(msg=>{
             const cls = msg.sentiment;
             const time = moment(msg.timestamp).fromNow();
@@ -387,16 +517,15 @@
         const neg = messages.filter(m=>m.sentiment==="negative").length;
         const neu = messages.filter(m=>m.sentiment==="neutral").length;
         const ctxDonut = document.getElementById("dashboardDonut")?.getContext("2d");
-        if(ctxDonut && donutChart) { donutChart.data.datasets[0].data = [pos,neg,neu]; donutChart.update(); }
+        if(window.donutChart) { window.donutChart.data.datasets[0].data = [pos,neg,neu]; window.donutChart.update(); }
         else if(ctxDonut){
-            donutChart = new Chart(ctxDonut, { type:'doughnut', data:{ labels:['Positive','Negative','Neutral'], datasets:[{ data:[pos,neg,neu], backgroundColor:['#2a7f6e','#c7362b','#e6a017'] }] }, options:{ responsive:true, plugins:{ legend:{ position:'bottom' } } } });
+            window.donutChart = new Chart(ctxDonut, { type:'doughnut', data:{ labels:['Positive','Negative','Neutral'], datasets:[{ data:[pos,neg,neu], backgroundColor:['#2a7f6e','#c7362b','#e6a017'] }] }, options:{ responsive:true, plugins:{ legend:{ position:'bottom' } } } });
         }
-        // 7-day trend
         const counts = getLast7DaysCounts();
         const ctxTrend = document.getElementById("trendChartMain")?.getContext("2d");
-        if(ctxTrend && trendMain) { trendMain.data.datasets[0].data = counts; trendMain.update(); }
+        if(window.trendMain) { window.trendMain.data.datasets[0].data = counts; window.trendMain.update(); }
         else if(ctxTrend){
-            trendMain = new Chart(ctxTrend, { type:'line', data:{ labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets:[{ label:'Interactions', data:counts, borderColor:'#1f5e4c', tension:0.3, fill:false }] } });
+            window.trendMain = new Chart(ctxTrend, { type:'line', data:{ labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets:[{ label:'Interactions', data:counts, borderColor:'#1f5e4c', tension:0.3, fill:false }] } });
         }
     }
 
@@ -420,16 +549,15 @@
         const topics = Array.from(topicCounts.keys());
         const counts = topics.map(t=>topicCounts.get(t));
         const ctxBar = document.getElementById("topicBarChart")?.getContext("2d");
-        if(ctxBar && topicChart) { topicChart.data.labels = topics; topicChart.data.datasets[0].data = counts; topicChart.update(); }
+        if(window.topicChart) { window.topicChart.data.labels = topics; window.topicChart.data.datasets[0].data = counts; window.topicChart.update(); }
         else if(ctxBar){
-            topicChart = new Chart(ctxBar, { type:'bar', data:{ labels:topics, datasets:[{ label:'Messages', data:counts, backgroundColor:'#4b8c7a' }] }, options:{ responsive:true, plugins:{ legend:{ display:false } } } });
+            window.topicChart = new Chart(ctxBar, { type:'bar', data:{ labels:topics, datasets:[{ label:'Messages', data:counts, backgroundColor:'#4b8c7a' }] }, options:{ responsive:true, plugins:{ legend:{ display:false } } } });
         }
-        // sentiment trend 14 days
         const trend14 = getSentimentTrend14();
         const ctxLine = document.getElementById("sentimentTrendLine")?.getContext("2d");
-        if(ctxLine && sentimentChart) { sentimentChart.data.datasets[0].data = trend14.pos; sentimentChart.data.datasets[1].data = trend14.neg; sentimentChart.update(); }
+        if(window.sentimentChart) { window.sentimentChart.data.datasets[0].data = trend14.pos; window.sentimentChart.data.datasets[1].data = trend14.neg; window.sentimentChart.update(); }
         else if(ctxLine){
-            sentimentChart = new Chart(ctxLine, { type:'line', data:{ labels:trend14.labels, datasets:[{ label:'Positive %', data:trend14.pos, borderColor:'#2a7f6e' },{ label:'Negative %', data:trend14.neg, borderColor:'#c7362b' }] }, options:{ responsive:true } });
+            window.sentimentChart = new Chart(ctxLine, { type:'line', data:{ labels:trend14.labels, datasets:[{ label:'Positive %', data:trend14.pos, borderColor:'#2a7f6e' },{ label:'Negative %', data:trend14.neg, borderColor:'#c7362b' }] }, options:{ responsive:true } });
         }
     }
 
@@ -447,6 +575,84 @@
             negArr.push(total===0?0:Math.round((neg/total)*100));
         }
         return { labels, pos:posArr, neg:negArr };
+    }
+
+    function renderTrendingTopicsChart() {
+        const topics = ["water","health","infrastructure","education","energy","connectivity"];
+        const last7 = getLast7DaysTopicCounts(topics);
+        const ctx = document.getElementById("trendingTopicsChart")?.getContext("2d");
+        if(window.trendTopicsChart) { window.trendTopicsChart.data.datasets = last7.datasets; window.trendTopicsChart.update(); }
+        else if(ctx){
+            window.trendTopicsChart = new Chart(ctx, { type:'line', data:{ labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets:last7.datasets }, options:{ responsive:true, plugins:{ legend:{ position:'top' } } } });
+        }
+    }
+
+    function getLast7DaysTopicCounts(topics) {
+        const counts = topics.map(()=>new Array(7).fill(0));
+        const now = new Date();
+        messages.forEach(msg=>{
+            const idxTopic = topics.indexOf(msg.topic);
+            if(idxTopic === -1) return;
+            const d = new Date(msg.timestamp);
+            const diff = Math.floor((now-d)/(1000*3600*24));
+            if(diff>=0 && diff<7){
+                const dayIdx = (6 - diff) % 7;
+                counts[idxTopic][dayIdx]++;
+            }
+        });
+        const datasets = topics.map((t,i)=>({ label:t, data:counts[i], borderColor:`hsl(${i*50},70%,50%)`, fill:false, tension:0.3 }));
+        return { datasets };
+    }
+
+    function renderWordCloud() {
+        const wordFreq = new Map();
+        messages.forEach(m => {
+            const words = m.text.toLowerCase().split(/\s+/);
+            words.forEach(w => {
+                if(w.length > 2 && !["the","and","for","that","this","with","from","have","were","are","kwa","na","ya","wa","kwa"].includes(w))
+                    wordFreq.set(w, (wordFreq.get(w)||0)+1);
+            });
+        });
+        const sorted = Array.from(wordFreq.entries()).sort((a,b)=>b[1]-a[1]).slice(0,30);
+        const container = document.getElementById("wordCloudContainer");
+        container.innerHTML = sorted.map(([word, freq]) => `<span style="font-size:${12 + freq*1.5}px; margin:4px;">${word}</span>`).join('');
+    }
+
+    function renderSentimentByRegion() {
+        const regionSent = {};
+        REGIONS.forEach(r => { regionSent[r] = { pos:0, neg:0, total:0 }; });
+        messages.forEach(m => {
+            if(regionSent[m.region]) {
+                regionSent[m.region].total++;
+                if(m.sentiment==="positive") regionSent[m.region].pos++;
+                if(m.sentiment==="negative") regionSent[m.region].neg++;
+            }
+        });
+        const container = document.getElementById("sentimentByRegion");
+        container.innerHTML = REGIONS.map(r => {
+            const data = regionSent[r];
+            const posPercent = data.total===0?0:Math.round((data.pos/data.total)*100);
+            const negPercent = data.total===0?0:Math.round((data.neg/data.total)*100);
+            return `<div class="card"><b>${r}</b><div>👍 ${posPercent}% positive</div><div>👎 ${negPercent}% negative</div><div>📊 ${data.total} msgs</div></div>`;
+        }).join('');
+    }
+
+    function updateAnomalyAlert() {
+        const waterNeg = messages.filter(m=>m.topic==="water" && m.sentiment==="negative").length;
+        const banner = document.getElementById("anomalyBanner");
+        if(waterNeg>3) banner.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ⚠️ AI alert: High volume of water complaints in Dar/Mwanza. Immediate action recommended.`;
+        else banner.innerHTML = `<i class="fas fa-chart-line"></i> Real‑time monitoring: no critical anomalies detected.`;
+    }
+
+    function updateAIInsights() {
+        const totalNeg = messages.filter(m=>m.sentiment==="negative").length;
+        const total = messages.length;
+        const negRatio = total===0?0:Math.round((totalNeg/total)*100);
+        const topTopic = [...new Map(messages.map(m=>[m.topic, (messages.filter(x=>x.topic===m.topic).length)]))].sort((a,b)=>b[1]-a[1])[0];
+        const insightDiv = document.getElementById("aiInsightsText");
+        insightDiv.innerHTML = `<p>🔍 <strong>Predictive summary:</strong> ${topTopic?topTopic[0].toUpperCase():"General"} is the dominant issue. Negative sentiment ratio: ${negRatio}%.</p>
+        <p>📈 Forecast: Water & infrastructure complaints may rise by 12% next week. Proactive resource allocation advised.</p>
+        <p>🤖 AI recommends: Deploy rapid response teams to Dar es Salaam and Mwanza for water infrastructure.</p>`;
     }
 
     function renderRegionHeatmap() {
@@ -470,25 +676,16 @@
         if(container) container.innerHTML = recent.map(m=>`<div class="message-item ${m.sentiment}"><strong>${m.text.substring(0,80)}</strong><div style="font-size:0.7rem">${moment(m.timestamp).fromNow()} · ${m.channel}</div></div>`).join('');
     }
 
-    function updateAnomalyAlert() {
-        const waterNeg = messages.filter(m=>m.topic==="water" && m.sentiment==="negative").length;
-        const banner = document.getElementById("anomalyBanner");
-        if(waterNeg>3) banner.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ⚠️ AI alert: High volume of water complaints in Dar/Mwanza. Immediate action recommended.`;
-        else banner.innerHTML = `<i class="fas fa-chart-line"></i> Real‑time monitoring: no critical anomalies detected.`;
+    function populateRegionFilters() {
+        const select = document.getElementById("feedRegion");
+        if(select && select.children.length <= 1) {
+            select.innerHTML = '<option value="">All regions</option>' + REGIONS.map(r=>`<option>${r}</option>`).join('');
+        }
+        const regionDatalist = document.getElementById("regionList");
+        if(regionDatalist) regionDatalist.innerHTML = REGIONS.map(r=>`<option>${r}</option>`).join('');
     }
 
-    function updateAIInsights() {
-        const totalNeg = messages.filter(m=>m.sentiment==="negative").length;
-        const total = messages.length;
-        const negRatio = total===0?0:Math.round((totalNeg/total)*100);
-        const topTopic = [...new Map(messages.map(m=>[m.topic, (messages.filter(x=>x.topic===m.topic).length)]))].sort((a,b)=>b[1]-a[1])[0];
-        const insightDiv = document.getElementById("aiInsightsText");
-        insightDiv.innerHTML = `<p>🔍 <strong>Predictive summary:</strong> ${topTopic?topTopic[0].toUpperCase():"General"} is the dominant issue. Negative sentiment ratio: ${negRatio}%.</p>
-        <p>📈 Forecast: Water & infrastructure complaints may rise by 15% next week based on seasonal patterns. Proactive resource allocation advised.</p>
-        <p>🤖 AI recommends: Deploy rapid response teams to Dar es Salaam and Mwanza for water infrastructure.</p>`;
-    }
-
-    // Map (Leaflet)
+    // Map
     function initMap() {
         const mapDiv = document.getElementById("leafletMap");
         if(!mapDiv) return;
@@ -498,7 +695,7 @@
     }
     function updateMapMarkers() {
         if(!leafletMap) return;
-        leafletMap.eachLayer(layer => { if(layer instanceof L.Marker) leafletMap.removeLayer(layer); });
+        leafletMap.eachLayer(layer => { if(layer instanceof L.Marker || layer instanceof L.CircleMarker) leafletMap.removeLayer(layer); });
         const regionCoords = {
             "Dar es Salaam":[-6.792,39.208], "Arusha":[-3.386,36.682], "Mwanza":[-2.516,32.917], "Mbeya":[-8.907,33.466], "Dodoma":[-6.162,35.752], "Zanzibar":[-6.165,39.202], "Tanga":[-5.069,39.099], "Morogoro":[-6.826,37.671], "Kilimanjaro":[-3.067,37.355], "Tabora":[-5.016,32.826]
         };
@@ -507,12 +704,13 @@
         for(let [reg, coord] of Object.entries(regionCoords)){
             let count = regionCount.get(reg)||0;
             if(count>0){
-                L.marker(coord).addTo(leafletMap).bindPopup(`<b>${reg}</b><br>${count} messages<br>${Math.round((messages.filter(m=>m.region===reg && m.sentiment==="positive").length/count)*100)}% positive`);
+                L.circleMarker(coord, { radius: Math.min(20, 5 + count*2), color: '#1f5e4c', fillColor: '#2d7a64', fillOpacity: 0.7 })
+                    .addTo(leafletMap)
+                    .bindPopup(`<b>${reg}</b><br>${count} messages<br>${Math.round((messages.filter(m=>m.region===reg && m.sentiment==="positive").length/count)*100)}% positive`);
             }
         }
     }
 
-    // Report generation
     function generateReport() {
         const type = document.getElementById("reportType").value;
         const format = document.getElementById("reportFormat").value;
@@ -538,7 +736,6 @@
         });
     }
 
-    // Theme toggle
     function initTheme() {
         const stored = localStorage.getItem("thea_theme");
         if(stored === "dark") document.body.classList.add("dark");
@@ -547,8 +744,6 @@
             localStorage.setItem("thea_theme", document.body.classList.contains("dark") ? "dark" : "light");
         });
     }
-
-    // Navigation
     function initNav() {
         const navs = document.querySelectorAll(".nav-item");
         const pages = document.querySelectorAll(".page");
@@ -560,33 +755,38 @@
                 pages.forEach(p=>p.classList.remove("active-page"));
                 document.getElementById(pageId).classList.add("active-page");
                 if(pageId === "analytics") { setTimeout(()=>{ if(leafletMap) leafletMap.invalidateSize(); }, 100); }
-                if(pageId === "livefeed") renderLiveFeed();
+                if(pageId === "livefeed") resetNotification();
                 refreshAll();
             });
         });
     }
 
-    // Event bindings
     document.getElementById("submitMsgBtn")?.addEventListener("click",()=>{
         const text = document.getElementById("msgText").value;
         const channel = document.getElementById("msgChannel").value;
         const region = document.getElementById("msgRegion").value;
-        if(!text.trim()){ alert("Please enter a message"); return; }
-        addMessage(text, channel, region);
+        if(!text.trim()){ notyf.error("Please enter a message"); return; }
+        addMessage(text, channel, region, false);
         document.getElementById("msgText").value = "";
         document.getElementById("msgRegion").value = "";
-        refreshAll();
-        alert("✅ Message submitted! THEA analytics updated.");
     });
-    document.getElementById("feedFilter")?.addEventListener("input",()=>renderLiveFeed());
+    document.getElementById("feedKeyword")?.addEventListener("input",()=>renderLiveFeed());
+    document.getElementById("feedSentiment")?.addEventListener("change",()=>renderLiveFeed());
+    document.getElementById("feedTopic")?.addEventListener("change",()=>renderLiveFeed());
+    document.getElementById("feedRegion")?.addEventListener("change",()=>renderLiveFeed());
     document.getElementById("generateReportBtn")?.addEventListener("click",generateReport);
+    document.getElementById("notificationBell")?.addEventListener("click",()=>{ resetNotification(); renderLiveFeed(); });
+
+    document.getElementById("mobileMenuBtn")?.addEventListener("click",()=>{
+        document.getElementById("app").classList.toggle("show-sidebar");
+    });
 
     loadData();
     initMap();
     initTheme();
     initNav();
     refreshAll();
-    setInterval(()=>{ refreshAll(); }, 7000);
+    startSimulation();
 </script>
 </body>
 </html>
