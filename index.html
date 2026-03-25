@@ -3,24 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>THEA 6.0 · Total Human Engagement Analyst | Tanzania</title>
+    <title>THEA 5.0 · Total Human Engagement Analyst | Tanzania</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- Leaflet + plugins -->
+    <!-- Chart.js date adapter for time scales -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <!-- Leaflet + MarkerCluster + Choropleth -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     <!-- Moment.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <!-- Notyf -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css">
     <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
-    <!-- html2canvas + jspdf -->
+    <!-- html2canvas + jspdf for PDF export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
@@ -43,10 +44,6 @@
             --neutral: #e6a017;
             --sidebar-bg: #0b2b26;
             --sidebar-text: #e0f2e9;
-            --urgent: #c7362b;
-            --high: #e67e22;
-            --normal: #3498db;
-            --low: #95a5a6;
         }
         body.dark {
             --bg: #0f172a;
@@ -121,12 +118,10 @@
             margin-bottom: 12px;
             border-left: 5px solid;
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-            cursor: pointer;
         }
-        .priority-urgent { border-left-color: var(--urgent); }
-        .priority-high { border-left-color: var(--high); }
-        .priority-normal { border-left-color: var(--normal); }
-        .priority-low { border-left-color: var(--low); }
+        .positive { border-left-color: var(--positive); }
+        .negative { border-left-color: var(--negative); }
+        .neutral { border-left-color: var(--neutral); }
         button, .btn {
             background: var(--primary);
             border: none;
@@ -164,6 +159,12 @@
             align-items: center;
             padding: 16px;
         }
+        .word-cloud span {
+            cursor: pointer;
+            transition: 0.1s;
+            color: var(--primary);
+        }
+        .word-cloud span:hover { transform: scale(1.05); text-decoration: underline; }
         .filter-bar {
             display: flex;
             gap: 12px;
@@ -227,46 +228,10 @@
         @media (max-width: 900px) { .mobile-menu-btn { display: flex; } }
         .progress-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin: 8px 0; }
         .progress-fill { height: 100%; background: var(--primary); width: 0%; }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
+        .forecast-line {
+            stroke-dasharray: 5,5;
         }
-        .modal-content {
-            background: var(--card-bg);
-            border-radius: 28px;
-            max-width: 600px;
-            width: 90%;
-            padding: 24px;
-            position: relative;
-        }
-        .close-modal {
-            position: absolute;
-            top: 16px;
-            right: 20px;
-            font-size: 24px;
-            cursor: pointer;
-        }
-        .role-selector {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-        .role-btn {
-            background: var(--border);
-            color: var(--text);
-            padding: 6px 12px;
-            border-radius: 40px;
-            cursor: pointer;
-        }
-        .role-btn.active {
-            background: var(--primary);
-            color: white;
-        }
+        .tooltip-icon { margin-left: 8px; cursor: help; opacity: 0.6; }
     </style>
 </head>
 <body>
@@ -274,7 +239,7 @@
 <div class="app" id="app">
     <div class="sidebar">
         <div class="logo-area">
-            <h1><i class="fas fa-chart-network"></i> THEA 6.0</h1>
+            <h1><i class="fas fa-chart-network"></i> THEA 5.0</h1>
             <p>Total Human Engagement Analyst</p>
             <p style="font-size:0.7rem; opacity:0.7;">Tanzania · AI‑powered governance</p>
         </div>
@@ -287,11 +252,6 @@
             <div class="nav-item" data-page="system"><i class="fas fa-microchip"></i> System Health</div>
         </div>
         <div class="sidebar-footer" style="padding: 24px; font-size:0.7rem; border-top:1px solid rgba(255,255,255,0.1);">
-            <div class="role-selector" id="roleSelector">
-                <span style="margin-right:8px;">Role:</span>
-                <span class="role-btn" data-role="analyst">Analyst</span>
-                <span class="role-btn" data-role="admin">Admin</span>
-            </div>
             <i class="fas fa-shield-alt"></i> PDP Act 2022 compliant<br>
             <i class="fas fa-database"></i> Real‑time unified stream
         </div>
@@ -302,9 +262,9 @@
             <div class="alert-banner" id="anomalyBanner"><i class="fas fa-bell"></i> AI anomaly detection active – monitoring real‑time spikes</div>
             <div class="grid-4">
                 <div class="card"><h3><i class="fas fa-inbox"></i> Total Interactions</h3><div class="stat-number" id="statTotal">0</div><span>+12% vs last week</span></div>
-                <div class="card"><h3><i class="fas fa-smile"></i> Avg Sentiment Score</h3><div class="stat-number" id="statSentimentScore">0</div><span>/100 (positive)</span></div>
+                <div class="card"><h3><i class="fas fa-smile"></i> Citizen Sentiment</h3><div class="stat-number" id="statSentiment">0%</div><span>positive ratio</span></div>
                 <div class="card"><h3><i class="fas fa-tags"></i> Active Topics</h3><div class="stat-number" id="statTopics">0</div></div>
-                <div class="card"><h3><i class="fas fa-exclamation-triangle"></i> Urgent Messages</h3><div class="stat-number" id="statUrgent">0</div><span>priority urgent/high</span></div>
+                <div class="card"><h3><i class="fas fa-chart-line"></i> Alert Level</h3><div class="stat-number" id="alertLevel">Low</div><span>based on anomalies</span></div>
             </div>
             <div class="grid-2">
                 <div class="card"><div class="card-header"><h2><i class="fas fa-chart-pie"></i> Sentiment Breakdown</h2></div><canvas id="dashboardDonut" height="180"></canvas></div>
@@ -315,14 +275,13 @@
             <div class="card"><div class="card-header"><h2><i class="fas fa-calendar-week"></i> Message Volume Heatmap (last 30 days)</h2></div><canvas id="calendarHeatmap" height="120"></canvas></div>
         </div>
 
-        <!-- LIVE FEED -->
+        <!-- LIVE FEED with advanced filters -->
         <div id="livefeed" class="page">
             <div class="card">
                 <div class="flex-between"><h2><i class="fas fa-stream"></i> Real‑time citizen messages</h2><div class="notification-bell" id="notificationBell"><i class="fas fa-bell"></i><span id="newMsgCount" class="badge-count" style="display:none;">0</span></div></div>
                 <div class="filter-bar">
                     <input type="text" id="feedKeyword" placeholder="Keyword filter" style="flex:1;">
                     <select id="feedSentiment"><option value="">All sentiments</option><option value="positive">Positive</option><option value="negative">Negative</option><option value="neutral">Neutral</option></select>
-                    <select id="feedPriority"><option value="">All priorities</option><option value="urgent">Urgent</option><option value="high">High</option><option value="normal">Normal</option><option value="low">Low</option></select>
                     <select id="feedTopic"><option value="">All topics</option><option value="water">Water</option><option value="health">Health</option><option value="infrastructure">Infrastructure</option><option value="education">Education</option><option value="energy">Energy</option><option value="connectivity">Connectivity</option></select>
                     <select id="feedRegion"><option value="">All regions</option></select>
                     <input type="date" id="feedDateFrom" placeholder="From">
@@ -332,26 +291,25 @@
             </div>
         </div>
 
-        <!-- AI ANALYTICS -->
+        <!-- AI ANALYTICS with forecasting -->
         <div id="analytics" class="page">
             <div class="grid-2">
-                <div class="card"><h2><i class="fas fa-chart-line"></i> Sentiment trend (14 days + forecast)</h2><canvas id="sentimentTrendLine" height="150"></canvas></div>
+                <div class="card"><h2><i class="fas fa-chart-line"></i> Sentiment trend (14 days) <span class="tooltip-icon" title="Forecast next 7 days shown dashed">ⓘ</span></h2><canvas id="sentimentTrendLine" height="150"></canvas></div>
                 <div class="card"><h2><i class="fas fa-chart-bar"></i> Topic distribution</h2><canvas id="topicBarChart" height="150"></canvas></div>
             </div>
             <div class="card"><h2><i class="fas fa-chart-line"></i> Trending Topics (last 7 days)</h2><canvas id="trendingTopicsChart" height="120"></canvas></div>
             <div class="card"><h2><i class="fas fa-chart-simple"></i> Sentiment by Channel</h2><canvas id="sentimentByChannelChart" height="150"></canvas></div>
-            <div class="card"><h2><i class="fas fa-chart-radar"></i> Topic Radar (priority weighted)</h2><canvas id="radarChart" height="200"></canvas></div>
             <div class="card"><h2><i class="fas fa-robot"></i> AI predictive insights</h2><div id="aiInsightsText"></div></div>
             <div class="card"><h2><i class="fas fa-chart-simple"></i> Sentiment by Region</h2><div id="sentimentByRegion" class="grid-2"></div></div>
-            <div class="card"><h2><i class="fas fa-map"></i> Interactive geospatial view (heatmap + cluster)</h2><div id="leafletMap" class="map-container"></div></div>
+            <div class="card"><h2><i class="fas fa-map"></i> Interactive geospatial view (cluster + choropleth)</h2><div id="leafletMap" class="map-container"></div></div>
         </div>
 
-        <!-- REPORTS -->
+        <!-- REPORTS with PDF dashboard export -->
         <div id="reports" class="page">
             <div class="card">
                 <h2><i class="fas fa-download"></i> Generate Report</h2>
                 <div class="grid-2">
-                    <div><label>Report type</label><select id="reportType"><option>Weekly Summary</option><option>Monthly Trends</option><option>Topic Deep Dive</option><option>Priority Analysis</option></select></div>
+                    <div><label>Report type</label><select id="reportType"><option>Weekly Summary</option><option>Monthly Trends</option><option>Topic Deep Dive</option></select></div>
                     <div><label>Format</label><select id="reportFormat"><option>CSV</option><option>JSON</option><option>PDF (Dashboard)</option></select></div>
                 </div>
                 <button id="generateReportBtn" style="margin-top:16px;"><i class="fas fa-file-export"></i> Export Report</button>
@@ -368,7 +326,7 @@
             </div>
         </div>
 
-        <!-- ENGAGEMENT HUB -->
+        <!-- ENGAGEMENT HUB with language toggle and more channels -->
         <div id="engagement" class="page">
             <div class="card">
                 <div class="flex-between"><h2><i class="fas fa-pen-alt"></i> Share your voice</h2><div class="lang-switch" id="langSwitch"><i class="fas fa-language"></i> Kiswahili</div></div>
@@ -382,7 +340,7 @@
             <div class="card"><h2><i class="fas fa-history"></i> Recent contributions</h2><div id="recentContributions"></div></div>
         </div>
 
-        <!-- SYSTEM HEALTH -->
+        <!-- SYSTEM HEALTH with metrics -->
         <div id="system" class="page">
             <div class="grid-2">
                 <div class="card"><h2><i class="fas fa-microchip"></i> Platform Status</h2><div id="sysStatus">✅ Data ingestion active<br>✅ NLP engine (Swahili/EN)<br>✅ Kafka streams healthy<br>✅ Geospatial API online</div></div>
@@ -400,28 +358,9 @@
                 </div>
             </div>
         </div>
-        <footer>© 2025 THEA 6.0 – Advanced citizen listening platform | Real‑time AI | Privacy by design</footer>
+        <footer>© 2025 THEA 5.0 – Advanced citizen listening platform | Real‑time AI | Privacy by design</footer>
     </div>
     <div class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></div>
-</div>
-<!-- Modal for message details -->
-<div id="messageModal" class="modal">
-    <div class="modal-content">
-        <span class="close-modal">&times;</span>
-        <h3 id="modalTitle">Message Details</h3>
-        <p id="modalText"></p>
-        <p><strong>Sentiment:</strong> <span id="modalSentiment"></span></p>
-        <p><strong>Priority:</strong> <span id="modalPriority"></span></p>
-        <p><strong>Topic:</strong> <span id="modalTopic"></span></p>
-        <p><strong>Region:</strong> <span id="modalRegion"></span></p>
-        <p><strong>Channel:</strong> <span id="modalChannel"></span></p>
-        <p><strong>Timestamp:</strong> <span id="modalTimestamp"></span></p>
-        <div id="adminActions" style="display:none;">
-            <label>Status:</label>
-            <select id="messageStatus"><option>Pending</option><option>In Progress</option><option>Resolved</option></select>
-            <button id="updateStatusBtn">Update Status</button>
-        </div>
-    </div>
 </div>
 
 <script>
@@ -434,30 +373,24 @@
     let newMessageCount = 0;
     let leafletMap = null;
     let markerCluster = null;
-    let heatLayer = null;
     let notyf = new Notyf({ duration: 3000, position: { x: 'right', y: 'top' } });
     let currentLang = "en";
-    let currentRole = "analyst";
-    let selectedMessageId = null;
     const translations = {
         en: { placeholder: "Type your message in Swahili/English...", submit: "Submit & analyse", langLabel: "Kiswahili" },
         sw: { placeholder: "Andika ujumbe wako kwa Kiswahili/English...", submit: "Tuma & chambua", langLabel: "English" }
     };
 
-    // Enhanced AI: sentiment intensity (0-100) and priority
+    // Helper: AI analysis
     function analyzeMessage(text) {
         const lower = text.toLowerCase();
         let pos = 0, neg = 0;
-        const posWords = ["asante","shukran","good","great","excellent","nzuri","safi","thank","helpful","bora","nimefurahia","pongezi","happy"];
-        const negWords = ["shida","tatizo","broken","haribika","mbaya","fail","not working","dawa hazipo","umeme","malalamiko","tatanishi","corruption","bribe","angry"];
+        const posWords = ["asante","shukran","good","great","excellent","nzuri","safi","thank","helpful","bora","nimefurahia","pongezi"];
+        const negWords = ["shida","tatizo","broken","haribika","mbaya","fail","not working","dawa hazipo","umeme","malalamiko","tatanishi"];
         posWords.forEach(w => { if(lower.includes(w)) pos++; });
         negWords.forEach(w => { if(lower.includes(w)) neg++; });
         let sentiment = "neutral";
-        let sentimentScore = 50;
-        if(pos > neg) { sentiment = "positive"; sentimentScore = 50 + Math.min(50, pos * 15); }
-        else if(neg > pos) { sentiment = "negative"; sentimentScore = 50 - Math.min(50, neg * 15); }
-        sentimentScore = Math.min(100, Math.max(0, sentimentScore));
-        
+        if(pos > neg) sentiment = "positive";
+        else if(neg > pos) sentiment = "negative";
         let topic = "general";
         if(lower.includes("maji")||lower.includes("water")) topic = "water";
         else if(lower.includes("afya")||lower.includes("health")||lower.includes("hospital")||lower.includes("dawa")) topic = "health";
@@ -465,16 +398,7 @@
         else if(lower.includes("elimu")||lower.includes("school")||lower.includes("vitabu")) topic = "education";
         else if(lower.includes("umeme")||lower.includes("electricity")) topic = "energy";
         else if(lower.includes("simu")||lower.includes("network")) topic = "connectivity";
-        
-        // Priority based on keywords and sentiment
-        let priority = "normal";
-        const urgentWords = ["emergency", "dharura", "death", "kifo", "collapse", "danger", "hatari"];
-        const highWords = ["broken", "not working", "haribika", "shida", "tatizo", "failure"];
-        if(urgentWords.some(w => lower.includes(w))) priority = "urgent";
-        else if(highWords.some(w => lower.includes(w))) priority = "high";
-        else if(sentiment === "positive") priority = "low";
-        
-        return { sentiment, sentimentScore, topic, priority };
+        return { sentiment, topic };
     }
 
     function persistData() { localStorage.setItem("thea_messages", JSON.stringify(messages)); }
@@ -485,12 +409,12 @@
     }
     function resetToDemo() {
         messages = [
-            { id:1, text:"Water pump broken in Kigamboni, no clean water since 3 days", sentiment:"negative", sentimentScore:20, topic:"water", priority:"high", timestamp:"2025-03-24T08:12:00", region:"Dar es Salaam", channel:"SMS", status:"Pending" },
-            { id:2, text:"Shukrani kwa huduma ya afya! watoa huduma walikuwa wakarimu sana.", sentiment:"positive", sentimentScore:85, topic:"health", priority:"low", timestamp:"2025-03-24T09:45:00", region:"Arusha", channel:"Voice Call", status:"Resolved" },
-            { id:3, text:"Tunahitaji barabara za lami mkoani Mwanza, lami imeharibika", sentiment:"negative", sentimentScore:35, topic:"infrastructure", priority:"high", timestamp:"2025-03-23T14:20:00", region:"Mwanza", channel:"WhatsApp", status:"Pending" },
-            { id:4, text:"Elimu ya bure inasaidia, lakini vitabu vya kutosha havipo.", sentiment:"neutral", sentimentScore:50, topic:"education", priority:"normal", timestamp:"2025-03-23T11:05:00", region:"Mbeya", channel:"SMS", status:"In Progress" },
-            { id:5, text:"Great mobile money services, but network is unstable in rural areas", sentiment:"negative", sentimentScore:40, topic:"connectivity", priority:"high", timestamp:"2025-03-22T19:30:00", region:"Tabora", channel:"Web", status:"Pending" },
-            { id:6, text:"Maji safi yamefika kata yetu! asante serikali", sentiment:"positive", sentimentScore:90, topic:"water", priority:"low", timestamp:"2025-03-22T07:50:00", region:"Dodoma", channel:"SMS", status:"Resolved" }
+            { id:1, text:"Water pump broken in Kigamboni, no clean water since 3 days", sentiment:"negative", topic:"water", timestamp:"2025-03-24T08:12:00", region:"Dar es Salaam", channel:"SMS" },
+            { id:2, text:"Shukrani kwa huduma ya afya! watoa huduma walikuwa wakarimu sana.", sentiment:"positive", topic:"health", timestamp:"2025-03-24T09:45:00", region:"Arusha", channel:"Voice Call" },
+            { id:3, text:"Tunahitaji barabara za lami mkoani Mwanza, lami imeharibika", sentiment:"negative", topic:"infrastructure", timestamp:"2025-03-23T14:20:00", region:"Mwanza", channel:"WhatsApp" },
+            { id:4, text:"Elimu ya bure inasaidia, lakini vitabu vya kutosha havipo.", sentiment:"neutral", topic:"education", timestamp:"2025-03-23T11:05:00", region:"Mbeya", channel:"SMS" },
+            { id:5, text:"Great mobile money services, but network is unstable in rural areas", sentiment:"negative", topic:"connectivity", timestamp:"2025-03-22T19:30:00", region:"Tabora", channel:"Web" },
+            { id:6, text:"Maji safi yamefika kata yetu! asante serikali", sentiment:"positive", topic:"water", timestamp:"2025-03-22T07:50:00", region:"Dodoma", channel:"SMS" }
         ];
         persistData();
     }
@@ -502,13 +426,10 @@
             id: Date.now(),
             text: text.trim(),
             sentiment: analysis.sentiment,
-            sentimentScore: analysis.sentimentScore,
             topic: analysis.topic,
-            priority: analysis.priority,
             timestamp: new Date().toISOString(),
             region: region && REGIONS.includes(region) ? region : REGIONS[Math.floor(Math.random()*REGIONS.length)],
-            channel: channel || "Web",
-            status: "Pending"
+            channel: channel || "Web"
         };
         messages.unshift(newMsg);
         persistData();
@@ -519,7 +440,6 @@
             updateNotificationBell();
             notyf.success(`New ${channel} message: "${text.substring(0,40)}..."`);
         }
-        if(analysis.priority === "urgent") notyf.error("URGENT: High priority message detected!");
     }
 
     function updateNotificationBell() {
@@ -531,7 +451,7 @@
 
     function startSimulation() {
         if(simulationTimer) clearInterval(simulationTimer);
-        const sampleTexts = ["Bomba la maji limeharibika tena", "Huduma za afya zimeboreka, asante!", "Barabara zetu zimejaa mashimo", "Vitabu vya shule havitoshi", "Umeme umekatika kwa siku tatu", "Network ya simu ni dhaifu hapa", "Maji safi yamefika! shukran", "Hospitali haina dawa za malaria", "Elimu ya bure inasaidia lakini walimu hawatoshi", "Tunahitaji miundombinu bora", "Emergency! Water pipe burst in my street", "Dharura! Mtu ameanguka kwenye shimo barabarani"];
+        const sampleTexts = ["Bomba la maji limeharibika tena","Huduma za afya zimeboreka, asante!","Barabara zetu zimejaa mashimo","Vitabu vya shule havitoshi","Umeme umekatika kwa siku tatu","Network ya simu ni dhaifu hapa","Maji safi yamefika! shukran","Hospitali haina dawa za malaria","Elimu ya bure inasaidia lakini walimu hawatoshi","Tunahitaji miundombinu bora"];
         simulationTimer = setInterval(() => {
             if(!simulationActive) return;
             const randomText = sampleTexts[Math.floor(Math.random()*sampleTexts.length)];
@@ -555,29 +475,31 @@
         renderSentimentByRegion();
         renderSentimentByChannel();
         renderCalendarHeatmap();
-        renderRadarChart();
         updateSystemMetrics();
         if(leafletMap) updateMapMarkers();
         populateRegionFilters();
-        updateRoleUI();
     }
 
     function updateStats() {
         const total = messages.length;
-        const avgScore = total===0?0:Math.round(messages.reduce((sum,m)=>sum+m.sentimentScore,0)/total);
+        const pos = messages.filter(m=>m.sentiment==="positive").length;
+        const posPercent = total===0?0:Math.round((pos/total)*100);
         document.getElementById("statTotal").innerText = total;
-        document.getElementById("statSentimentScore").innerText = avgScore;
+        document.getElementById("statSentiment").innerText = `${posPercent}%`;
         const topicsSet = new Set(messages.map(m=>m.topic));
         document.getElementById("statTopics").innerText = topicsSet.size;
-        const urgentCount = messages.filter(m=>m.priority==="urgent" || m.priority==="high").length;
-        document.getElementById("statUrgent").innerText = urgentCount;
+        const neg = messages.filter(m=>m.sentiment==="negative").length;
+        const negRatio = total===0?0:(neg/total);
+        let alertLevel = "Low";
+        if(negRatio > 0.3) alertLevel = "High";
+        else if(negRatio > 0.15) alertLevel = "Medium";
+        document.getElementById("alertLevel").innerHTML = alertLevel;
         document.getElementById("topTopicsDashboard").innerHTML = Array.from(new Map(messages.map(m=>[m.topic, (messages.filter(x=>x.topic===m.topic).length)]))).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([t,c])=>`<div class="flex-between"><span>${t.toUpperCase()}</span><span class="badge">${c}</span></div>`).join('');
     }
 
     function renderLiveFeed() {
         const keyword = document.getElementById("feedKeyword")?.value.toLowerCase() || "";
         const sentiment = document.getElementById("feedSentiment")?.value;
-        const priority = document.getElementById("feedPriority")?.value;
         const topic = document.getElementById("feedTopic")?.value;
         const region = document.getElementById("feedRegion")?.value;
         const dateFrom = document.getElementById("feedDateFrom")?.value;
@@ -585,7 +507,6 @@
         let filtered = messages.filter(m => {
             if(keyword && !m.text.toLowerCase().includes(keyword)) return false;
             if(sentiment && m.sentiment !== sentiment) return false;
-            if(priority && m.priority !== priority) return false;
             if(topic && m.topic !== topic) return false;
             if(region && m.region !== region) return false;
             if(dateFrom && moment(m.timestamp).isBefore(moment(dateFrom))) return false;
@@ -594,41 +515,7 @@
         });
         const container = document.getElementById("liveFeedContainer");
         if(filtered.length===0) { container.innerHTML="<div class='card'>No messages match filters</div>"; return; }
-        container.innerHTML = filtered.map(msg=>`<div class="message-item priority-${msg.priority}" data-id="${msg.id}"><div><strong>${msg.text}</strong></div><div style="font-size:0.7rem; margin-top:8px;"><i class="fas fa-tag"></i> ${msg.topic} · <i class="fas fa-flag"></i> ${msg.priority} · <i class="far fa-clock"></i> ${moment(msg.timestamp).fromNow()} · 📍 ${msg.region} · 📞 ${msg.channel}</div></div>`).join('');
-        // attach click handlers
-        document.querySelectorAll("#liveFeedContainer .message-item").forEach(el => {
-            el.addEventListener("click", (e) => {
-                const id = parseInt(el.getAttribute("data-id"));
-                const msg = messages.find(m => m.id === id);
-                if(msg) showMessageModal(msg);
-            });
-        });
-    }
-
-    function showMessageModal(msg) {
-        selectedMessageId = msg.id;
-        document.getElementById("modalTitle").innerText = `Message #${msg.id}`;
-        document.getElementById("modalText").innerHTML = msg.text;
-        document.getElementById("modalSentiment").innerHTML = `${msg.sentiment} (Score: ${msg.sentimentScore})`;
-        document.getElementById("modalPriority").innerHTML = msg.priority;
-        document.getElementById("modalTopic").innerHTML = msg.topic;
-        document.getElementById("modalRegion").innerHTML = msg.region;
-        document.getElementById("modalChannel").innerHTML = msg.channel;
-        document.getElementById("modalTimestamp").innerHTML = moment(msg.timestamp).format("LLL");
-        document.getElementById("messageStatus").value = msg.status || "Pending";
-        document.getElementById("adminActions").style.display = currentRole === "admin" ? "block" : "none";
-        document.getElementById("messageModal").style.display = "flex";
-    }
-
-    function closeModal() {
-        document.getElementById("messageModal").style.display = "none";
-    }
-
-    function updateStatus() {
-        const newStatus = document.getElementById("messageStatus").value;
-        const msg = messages.find(m => m.id === selectedMessageId);
-        if(msg) { msg.status = newStatus; persistData(); refreshAll(); notyf.success("Status updated"); }
-        closeModal();
+        container.innerHTML = filtered.map(msg=>`<div class="message-item ${msg.sentiment}"><div><strong>${msg.text}</strong></div><div style="font-size:0.7rem; margin-top:8px;"><i class="fas fa-tag"></i> ${msg.topic} · <i class="far fa-clock"></i> ${moment(msg.timestamp).fromNow()} · 📍 ${msg.region} · 📞 ${msg.channel}</div></div>`).join('');
     }
 
     function renderDashboardCharts() {
@@ -701,6 +588,7 @@
             posArr.push(total===0?0:Math.round((pos/total)*100));
             negArr.push(total===0?0:Math.round((neg/total)*100));
         }
+        // simple forecast: linear regression on last 7 days
         const last7Pos = posArr.slice(-7);
         const last7Neg = negArr.slice(-7);
         const forecastPos = last7Pos.length>1 ? [Math.min(100,Math.max(0,last7Pos[last7Pos.length-1] + (last7Pos[last7Pos.length-1]-last7Pos[0])/7))] : [posArr[posArr.length-1]];
@@ -739,22 +627,6 @@
         }
     }
 
-    function renderRadarChart() {
-        const topics = ["water","health","infrastructure","education","energy","connectivity"];
-        const urgencyWeight = { urgent:5, high:3, normal:1, low:0.5 };
-        const scores = topics.map(topic => {
-            const msgs = messages.filter(m=>m.topic===topic);
-            const totalWeight = msgs.reduce((sum,m)=> sum + (urgencyWeight[m.priority]||1), 0);
-            const avg = msgs.length===0?0:totalWeight/msgs.length;
-            return Math.min(10, avg);
-        });
-        const ctx = document.getElementById("radarChart")?.getContext("2d");
-        if(window.radarChart) { window.radarChart.data.datasets[0].data = scores; window.radarChart.update(); }
-        else if(ctx){
-            window.radarChart = new Chart(ctx, { type:'radar', data:{ labels:topics.map(t=>t.toUpperCase()), datasets:[{ label:'Urgency Score', data:scores, backgroundColor:'rgba(31,94,76,0.2)', borderColor:'#1f5e4c', pointBackgroundColor:'#1f5e4c' }] }, options:{ responsive:true, scales:{ r:{ beginAtZero:true, max:10 } } } });
-        }
-    }
-
     function renderWordCloud() {
         const wordFreq = new Map();
         messages.forEach(m => {
@@ -763,6 +635,7 @@
         const sorted = Array.from(wordFreq.entries()).sort((a,b)=>b[1]-a[1]).slice(0,30);
         const container = document.getElementById("wordCloudContainer");
         container.innerHTML = sorted.map(([w,f])=>`<span style="font-size:${12+f*1.5}px; margin:4px;" data-word="${w}">${w}</span>`).join('');
+        // attach click filter
         document.querySelectorAll("#wordCloudContainer span").forEach(span => {
             span.addEventListener("click", () => {
                 const word = span.getAttribute("data-word");
@@ -781,9 +654,8 @@
 
     function updateAnomalyAlert() {
         const waterNeg = messages.filter(m=>m.topic==="water" && m.sentiment==="negative").length;
-        const urgent = messages.filter(m=>m.priority==="urgent").length;
         const banner = document.getElementById("anomalyBanner");
-        if(waterNeg>3 || urgent>2) banner.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ⚠️ AI alert: High volume of water complaints or urgent messages. Immediate action recommended.`;
+        if(waterNeg>3) banner.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ⚠️ AI alert: High volume of water complaints in Dar/Mwanza. Immediate action recommended.`;
         else banner.innerHTML = `<i class="fas fa-chart-line"></i> Real‑time monitoring: no critical anomalies detected.`;
     }
 
@@ -792,8 +664,7 @@
         const total = messages.length;
         const negRatio = total===0?0:Math.round((totalNeg/total)*100);
         const topTopic = [...new Map(messages.map(m=>[m.topic, (messages.filter(x=>x.topic===m.topic).length)]))].sort((a,b)=>b[1]-a[1])[0];
-        const urgentCount = messages.filter(m=>m.priority==="urgent").length;
-        document.getElementById("aiInsightsText").innerHTML = `<p>🔍 <strong>Predictive summary:</strong> ${topTopic?topTopic[0].toUpperCase():"General"} is the dominant issue. Negative sentiment ratio: ${negRatio}%.</p><p>📈 Forecast: Water & infrastructure complaints may rise by 12% next week. Proactive resource allocation advised.</p><p>🤖 AI recommends: ${urgentCount>0 ? `Deploy rapid response teams immediately to address ${urgentCount} urgent issues.` : "Continue monitoring; no urgent action required."}</p>`;
+        document.getElementById("aiInsightsText").innerHTML = `<p>🔍 <strong>Predictive summary:</strong> ${topTopic?topTopic[0].toUpperCase():"General"} is the dominant issue. Negative sentiment ratio: ${negRatio}%.</p><p>📈 Forecast: Water & infrastructure complaints may rise by 12% next week. Proactive resource allocation advised.</p><p>🤖 AI recommends: Deploy rapid response teams to Dar es Salaam and Mwanza for water infrastructure.</p>`;
     }
 
     function renderRegionHeatmap() {
@@ -807,10 +678,11 @@
 
     function renderRecentContributions() {
         const recent = messages.slice(0,5);
-        document.getElementById("recentContributions").innerHTML = recent.map(m=>`<div class="message-item priority-${m.priority}"><strong>${m.text.substring(0,80)}</strong><div style="font-size:0.7rem">${moment(m.timestamp).fromNow()} · ${m.channel} · Status: ${m.status||"Pending"}</div></div>`).join('');
+        document.getElementById("recentContributions").innerHTML = recent.map(m=>`<div class="message-item ${m.sentiment}"><strong>${m.text.substring(0,80)}</strong><div style="font-size:0.7rem">${moment(m.timestamp).fromNow()} · ${m.channel}</div></div>`).join('');
     }
 
     function renderCalendarHeatmap() {
+        // last 30 days heatmap (simulated intensity based on message count)
         const days = [];
         const now = new Date();
         for(let i=29; i>=0; i--){
@@ -820,6 +692,7 @@
             const count = messages.filter(m=>m.timestamp.slice(0,10)===dayStr).length;
             days.push({ date: dayStr, count });
         }
+        const maxCount = Math.max(1, ...days.map(d=>d.count));
         const ctx = document.getElementById("calendarHeatmap")?.getContext("2d");
         const labels = days.map(d=>d.date.slice(5));
         const data = days.map(d=>d.count);
@@ -852,6 +725,17 @@
         markerCluster = L.markerClusterGroup();
         leafletMap.addLayer(markerCluster);
         updateMapMarkers();
+        // add choropleth overlay (simulated polygon layer)
+        const regionCoords = {
+            "Dar es Salaam":[[-6.9,39.1],[-6.7,39.3]], "Arusha":[[-3.5,36.5],[-3.3,36.8]], "Mwanza":[[-2.7,32.8],[-2.4,33.0]], "Mbeya":[[-9.0,33.3],[-8.8,33.6]], "Dodoma":[[-6.3,35.6],[-6.0,35.9]], "Zanzibar":[[-6.3,39.1],[-6.0,39.3]]
+        };
+        const regionCount = new Map();
+        messages.forEach(m=>regionCount.set(m.region, (regionCount.get(m.region)||0)+1));
+        for(let [reg, bounds] of Object.entries(regionCoords)){
+            const count = regionCount.get(reg)||0;
+            const color = count>3 ? '#c7362b' : (count>1 ? '#e6a017' : '#2b7e3e');
+            L.rectangle(bounds, { color, weight:1, fillOpacity:0.2 }).addTo(leafletMap).bindPopup(`${reg}: ${count} messages`);
+        }
     }
     function updateMapMarkers() {
         if(!markerCluster) return;
@@ -859,16 +743,26 @@
         const regionCoords = { "Dar es Salaam":[-6.792,39.208], "Arusha":[-3.386,36.682], "Mwanza":[-2.516,32.917], "Mbeya":[-8.907,33.466], "Dodoma":[-6.162,35.752], "Zanzibar":[-6.165,39.202], "Tanga":[-5.069,39.099], "Morogoro":[-6.826,37.671], "Kilimanjaro":[-3.067,37.355], "Tabora":[-5.016,32.826] };
         const regionCount = new Map();
         messages.forEach(m=>regionCount.set(m.region, (regionCount.get(m.region)||0)+1));
-        const heatPoints = [];
         for(let [reg, coord] of Object.entries(regionCoords)){
             let count = regionCount.get(reg)||0;
             if(count>0){
                 L.marker(coord).bindPopup(`<b>${reg}</b><br>${count} messages<br>${Math.round((messages.filter(m=>m.region===reg && m.sentiment==="positive").length/count)*100)}% positive`).addTo(markerCluster);
-                for(let i=0;i<count;i++) heatPoints.push([coord[0], coord[1], 0.5 + count/10]);
             }
         }
-        if(heatLayer) leafletMap.removeLayer(heatLayer);
-        heatLayer = L.heatLayer(heatPoints, { radius: 25, blur: 15, maxZoom: 10 }).addTo(leafletMap);
+    }
+
+    async function generatePDF() {
+        const element = document.createElement("div");
+        element.innerHTML = `<h2>THEA Report - ${new Date().toLocaleString()}</h2><pre>${JSON.stringify({ total:messages.length, messages:messages.slice(0,50) },null,2)}</pre>`;
+        document.body.appendChild(element);
+        const canvas = await html2canvas(element);
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF();
+        pdf.addImage(imgData, 'PNG', 10, 10, 190, 0);
+        pdf.save(`thea_report_${Date.now()}.pdf`);
+        document.body.removeChild(element);
+        notyf.success("PDF report generated");
     }
 
     async function exportDashboardPDF() {
@@ -886,10 +780,11 @@
         const type = document.getElementById("reportType").value;
         const format = document.getElementById("reportFormat").value;
         if(format === "PDF (Dashboard)") { exportDashboardPDF(); return; }
+        if(format === "PDF") { generatePDF(); return; }
         let data = { generated: new Date().toISOString(), type, total: messages.length, messages: messages.slice(0,100) };
         let output = "";
         if(format === "CSV"){
-            const headers = ["id","text","sentiment","sentimentScore","topic","priority","timestamp","region","channel","status"];
+            const headers = ["id","text","sentiment","topic","timestamp","region","channel"];
             const rows = messages.map(m => headers.map(h => JSON.stringify(m[h] || "")).join(","));
             output = [headers.join(","), ...rows].join("\n");
         } else { output = JSON.stringify(data, null, 2); }
@@ -973,27 +868,6 @@
         });
     }
 
-    function initRole() {
-        document.querySelectorAll(".role-btn").forEach(btn => {
-            btn.addEventListener("click", () => {
-                currentRole = btn.getAttribute("data-role");
-                document.querySelectorAll(".role-btn").forEach(b=>b.classList.remove("active"));
-                btn.classList.add("active");
-                updateRoleUI();
-                notyf.info(`Switched to ${currentRole} view`);
-                refreshAll();
-            });
-        });
-    }
-
-    function updateRoleUI() {
-        const adminElements = document.querySelectorAll("#adminActions");
-        adminElements.forEach(el => el.style.display = currentRole === "admin" ? "block" : "none");
-        if(currentRole === "admin") {
-            notyf.info("Admin mode: you can update message statuses.");
-        }
-    }
-
     // Event listeners
     document.getElementById("submitMsgBtn")?.addEventListener("click",()=>{
         const text = document.getElementById("msgText").value;
@@ -1006,7 +880,6 @@
     });
     document.getElementById("feedKeyword")?.addEventListener("input",()=>renderLiveFeed());
     document.getElementById("feedSentiment")?.addEventListener("change",()=>renderLiveFeed());
-    document.getElementById("feedPriority")?.addEventListener("change",()=>renderLiveFeed());
     document.getElementById("feedTopic")?.addEventListener("change",()=>renderLiveFeed());
     document.getElementById("feedRegion")?.addEventListener("change",()=>renderLiveFeed());
     document.getElementById("feedDateFrom")?.addEventListener("change",()=>renderLiveFeed());
@@ -1020,16 +893,12 @@
     document.getElementById("simulationInterval")?.addEventListener("change",e=>{ simulationIntervalMs = parseInt(e.target.value); startSimulation(); });
     document.getElementById("notificationBell")?.addEventListener("click",()=>{ resetNotification(); renderLiveFeed(); });
     document.getElementById("mobileMenuBtn")?.addEventListener("click",()=>document.getElementById("app").classList.toggle("show-sidebar"));
-    document.querySelector(".close-modal")?.addEventListener("click",closeModal);
-    document.getElementById("updateStatusBtn")?.addEventListener("click",updateStatus);
-    window.addEventListener("click", (e) => { if(e.target === document.getElementById("messageModal")) closeModal(); });
 
     loadData();
     initMap();
     initTheme();
     initNav();
     initLang();
-    initRole();
     startSimulation();
     refreshAll();
     setInterval(()=>{ refreshAll(); }, 8000);
