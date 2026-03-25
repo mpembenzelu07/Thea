@@ -3,12 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>THEA · Total Human Engagement Analyst | Tanzania</title>
+    <title>THEA 2.0 · Total Human Engagement Analyst | Tanzania</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Chart.js CDN -->
+    <!-- Chart.js 4 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- moment.js for nice timestamps -->
+    <!-- Leaflet for interactive map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Moment.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <style>
         * {
@@ -18,127 +21,88 @@
             font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
         }
 
+        :root {
+            --bg: #f4f7fc;
+            --card-bg: white;
+            --text: #1e293b;
+            --text-light: #475569;
+            --border: #e2e8f0;
+            --primary: #1f5e4c;
+            --primary-dark: #0e4436;
+            --positive: #2b7e3e;
+            --negative: #c7362b;
+            --neutral: #e6a017;
+            --sidebar-bg: #0b2b26;
+            --sidebar-text: #e0f2e9;
+        }
+        body.dark {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #e2e8f0;
+            --text-light: #94a3b8;
+            --border: #334155;
+            --primary: #2d7a64;
+            --primary-dark: #1f5e4c;
+        }
         body {
-            background: #f0f4f9;
+            background: var(--bg);
+            transition: background 0.2s, color 0.2s;
         }
 
-        /* modern scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #e2e8f0;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #2c6e4f;
-            border-radius: 8px;
-        }
-
-        /* main wrapper */
-        .app-wrapper {
+        /* Layout */
+        .app {
             display: flex;
             min-height: 100vh;
         }
-
-        /* SIDEBAR (professional) */
         .sidebar {
             width: 280px;
-            background: linear-gradient(180deg, #0b2b26 0%, #0a2a2a 100%);
-            color: #e0f2e9;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 2px 0 20px rgba(0,0,0,0.05);
+            background: var(--sidebar-bg);
+            color: var(--sidebar-text);
             position: fixed;
             height: 100vh;
             overflow-y: auto;
-            z-index: 10;
+            transition: transform 0.2s;
+            z-index: 20;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
         }
-
+        .main {
+            flex: 1;
+            margin-left: 280px;
+            padding: 28px 32px;
+            transition: margin 0.2s;
+        }
         .logo-area {
-            padding: 32px 24px 24px;
+            padding: 28px 24px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        .logo-area h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            letter-spacing: -0.3px;
-        }
-        .logo-area h1 i {
-            color: #5bc0a6;
-            margin-right: 8px;
-        }
-        .logo-area p {
-            font-size: 0.75rem;
-            opacity: 0.7;
-            margin-top: 8px;
-        }
-
-        .nav-menu {
-            flex: 1;
-            padding: 32px 16px;
-        }
+        .logo-area h1 { font-size: 1.8rem; font-weight: 700; }
+        .logo-area h1 i { color: #5bc0a6; margin-right: 8px; }
         .nav-item {
             display: flex;
             align-items: center;
             gap: 14px;
             padding: 12px 20px;
-            margin: 6px 0;
+            margin: 6px 12px;
             border-radius: 40px;
-            font-weight: 500;
             cursor: pointer;
             transition: 0.2s;
             color: #ccede3;
         }
-        .nav-item i {
-            width: 24px;
-            font-size: 1.2rem;
-        }
-        .nav-item.active {
+        .nav-item i { width: 24px; }
+        .nav-item.active, .nav-item:hover {
             background: #1f5e4c;
             color: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        .nav-item:hover:not(.active) {
-            background: #1f4a3e;
-            color: white;
-        }
-
-        .sidebar-footer {
-            padding: 24px 20px;
-            font-size: 0.7rem;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            color: #9bc2b4;
-        }
-
-        /* MAIN CONTENT */
-        .main-content {
-            flex: 1;
-            margin-left: 280px;
-            padding: 28px 32px;
-            transition: 0.2s;
-        }
-
-        /* page containers */
-        .page {
-            display: none;
-            animation: fade 0.25s ease;
-        }
-        .page.active-page {
-            display: block;
-        }
-        @keyframes fade {
-            from { opacity: 0; transform: translateY(5px);}
-            to { opacity: 1; transform: translateY(0);}
-        }
-
-        /* cards and layout */
+        .page { display: none; animation: fade 0.2s; }
+        .page.active-page { display: block; }
+        @keyframes fade { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
         .card {
-            background: white;
+            background: var(--card-bg);
             border-radius: 28px;
             padding: 24px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.03);
             margin-bottom: 28px;
-            border: 1px solid #eaf0f5;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
         }
         .card-header {
             display: flex;
@@ -147,55 +111,23 @@
             margin-bottom: 20px;
             flex-wrap: wrap;
         }
-        .card-header h2 {
-            font-size: 1.4rem;
-            font-weight: 600;
-            color: #1f2e3a;
-        }
-        .grid-2col {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 24px;
-        }
-        .grid-3col {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-        }
-        .stat-number {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: #1e5631;
-        }
-        .badge {
-            background: #eef2fa;
-            padding: 6px 14px;
-            border-radius: 40px;
-            font-size: 0.75rem;
-        }
-
+        .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 24px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+        .stat-number { font-size: 2.5rem; font-weight: 800; color: var(--primary); }
+        .badge { background: #eef2fa; padding: 4px 12px; border-radius: 40px; font-size: 0.75rem; color: #1f2e3a; }
         .message-item {
-            background: #fafcff;
+            background: var(--card-bg);
             border-radius: 20px;
-            padding: 16px;
+            padding: 14px;
             margin-bottom: 12px;
             border-left: 5px solid;
-            transition: 0.1s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
-        .positive { border-left-color: #2b7e3e; }
-        .negative { border-left-color: #c7362b; }
-        .neutral { border-left-color: #e6a017; }
-
-        .region-pill {
-            background: #eef2ff;
-            border-radius: 40px;
-            padding: 6px 14px;
-            font-size: 0.75rem;
-            display: inline-block;
-        }
-
-        button {
-            background: #1f5e4c;
+        .positive { border-left-color: var(--positive); }
+        .negative { border-left-color: var(--negative); }
+        .neutral { border-left-color: var(--neutral); }
+        button, .btn {
+            background: var(--primary);
             border: none;
             color: white;
             font-weight: 600;
@@ -204,86 +136,88 @@
             cursor: pointer;
             transition: 0.2s;
         }
-        button:hover {
-            background: #0e4436;
-        }
+        button:hover { background: var(--primary-dark); }
         input, textarea, select {
             width: 100%;
             padding: 12px 16px;
             border-radius: 32px;
-            border: 1px solid #cfdfed;
-            background: white;
-            font-size: 0.9rem;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text);
         }
-        .flex-between {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        @media (max-width: 900px) {
-            .sidebar { width: 240px; }
-            .main-content { margin-left: 240px; padding: 20px; }
-            .grid-2col, .grid-3col { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 700px) {
-            .sidebar { transform: translateX(-100%); position: fixed; }
-            .main-content { margin-left: 0; }
-            .app-wrapper.show-sidebar .sidebar { transform: translateX(0); }
-        }
-        footer {
-            text-align: center;
-            font-size: 0.7rem;
-            color: #6f8faa;
-            margin-top: 40px;
-        }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .map-container { height: 320px; border-radius: 24px; overflow: hidden; margin-top: 12px; }
         .alert-banner {
             background: #ffefdb;
-            border-radius: 20px;
-            padding: 12px 20px;
-            margin-bottom: 20px;
             border-left: 5px solid #e6a017;
+            padding: 12px 20px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+        .dark .alert-banner { background: #2d2a1f; border-left-color: #e6a017; }
+        footer { text-align: center; font-size: 0.7rem; margin-top: 40px; color: var(--text-light); }
+        @media (max-width: 900px) {
+            .sidebar { transform: translateX(-100%); }
+            .main { margin-left: 0; }
+            .app.show-sidebar .sidebar { transform: translateX(0); }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+        }
+        .theme-toggle {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--primary);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 30;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
     </style>
 </head>
 <body>
-<div class="app-wrapper">
+<div class="app" id="app">
     <div class="sidebar">
         <div class="logo-area">
             <h1><i class="fas fa-chart-network"></i> THEA</h1>
             <p>Total Human Engagement Analyst</p>
-            <p style="font-size:0.7rem;">Tanzania · Data‑driven governance</p>
+            <p style="font-size:0.7rem; opacity:0.7;">Tanzania · AI‑powered governance</p>
         </div>
         <div class="nav-menu">
             <div class="nav-item active" data-page="dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</div>
             <div class="nav-item" data-page="livefeed"><i class="fas fa-comments"></i> Live Feed</div>
             <div class="nav-item" data-page="analytics"><i class="fas fa-chart-line"></i> AI Analytics</div>
+            <div class="nav-item" data-page="reports"><i class="fas fa-file-alt"></i> Reports</div>
             <div class="nav-item" data-page="engagement"><i class="fas fa-paper-plane"></i> Engagement Hub</div>
-            <div class="nav-item" data-page="system"><i class="fas fa-microchip"></i> System Status</div>
+            <div class="nav-item" data-page="system"><i class="fas fa-microchip"></i> System Health</div>
         </div>
-        <div class="sidebar-footer">
-            <i class="fas fa-shield-alt"></i> Privacy Act 2022 compliant<br>
-            <i class="fas fa-database"></i> Real‑time insights
+        <div class="sidebar-footer" style="padding: 24px; font-size:0.7rem; border-top:1px solid rgba(255,255,255,0.1);">
+            <i class="fas fa-shield-alt"></i> PDP Act 2022 compliant<br>
+            <i class="fas fa-database"></i> Real‑time unified stream
         </div>
     </div>
-
-    <div class="main-content">
-        <!-- ======================= DASHBOARD PAGE ======================= -->
+    <div class="main">
+        <!-- DASHBOARD -->
         <div id="dashboard" class="page active-page">
-            <div class="alert-banner" id="anomalyAlert"><i class="fas fa-bell"></i> <span>AI anomaly detection active – monitoring real‑time spikes</span></div>
-            <div class="grid-3col">
-                <div class="card"><h3><i class="fas fa-inbox"></i> Total Interactions</h3><div class="stat-number" id="statTotal">0</div><span>last 7 days trend +12%</span></div>
+            <div class="alert-banner" id="anomalyBanner"><i class="fas fa-bell"></i> AI anomaly detection active – monitoring real‑time spikes</div>
+            <div class="grid-3">
+                <div class="card"><h3><i class="fas fa-inbox"></i> Total Interactions</h3><div class="stat-number" id="statTotal">0</div><span>+12% vs last week</span></div>
                 <div class="card"><h3><i class="fas fa-smile"></i> Citizen Sentiment</h3><div class="stat-number" id="statSentiment">0%</div><span>positive ratio</span></div>
-                <div class="card"><h3><i class="fas fa-tags"></i> Active Topics</h3><div class="stat-number" id="statTopics">0</div><span>water, health, infrastructure</span></div>
+                <div class="card"><h3><i class="fas fa-tags"></i> Active Topics</h3><div class="stat-number" id="statTopics">0</div><span>water, health, infra, edu</span></div>
             </div>
-            <div class="grid-2col">
-                <div class="card"><div class="card-header"><h2><i class="fas fa-chart-pie"></i> Sentiment breakdown</h2></div><canvas id="dashboardDonut" height="180"></canvas></div>
-                <div class="card"><div class="card-header"><h2><i class="fas fa-fire"></i> Top Topics</h2></div><div id="topTopicsDashboard" class="topics-list"></div></div>
+            <div class="grid-2">
+                <div class="card"><div class="card-header"><h2><i class="fas fa-chart-pie"></i> Sentiment Breakdown</h2></div><canvas id="dashboardDonut" height="180"></canvas></div>
+                <div class="card"><div class="card-header"><h2><i class="fas fa-fire"></i> Top Issues</h2></div><div id="topTopicsDashboard"></div></div>
             </div>
-            <div class="card"><div class="card-header"><h2><i class="fas fa-map-marked-alt"></i> Regional heatmap (volume)</h2></div><div id="regionHeatmapDashboard" class="region-grid" style="display:flex; flex-wrap:wrap; gap:8px;"></div></div>
-            <div class="card"><div class="card-header"><h2><i class="fas fa-chart-line"></i> 7-Day Engagement Trend</h2></div><canvas id="trendMainChart" height="100"></canvas></div>
+            <div class="card"><div class="card-header"><h2><i class="fas fa-map-marked-alt"></i> Regional Heatmap (volume)</h2></div><div id="regionHeatmapDashboard" class="flex-between" style="flex-wrap:wrap; gap:8px;"></div></div>
+            <div class="card"><div class="card-header"><h2><i class="fas fa-chart-line"></i> 7-Day Engagement Trend</h2></div><canvas id="trendChartMain" height="100"></canvas></div>
         </div>
 
-        <!-- ======================= LIVE FEED PAGE ======================= -->
+        <!-- LIVE FEED -->
         <div id="livefeed" class="page">
             <div class="card">
                 <div class="flex-between"><h2><i class="fas fa-stream"></i> Real‑time citizen messages</h2><div><input type="text" id="feedFilter" placeholder="Filter by keyword..." style="width:200px;"></div></div>
@@ -291,51 +225,67 @@
             </div>
         </div>
 
-        <!-- ======================= AI ANALYTICS PAGE ======================= -->
+        <!-- AI ANALYTICS -->
         <div id="analytics" class="page">
-            <div class="grid-2col">
-                <div class="card"><h2><i class="fas fa-chart-line"></i> Sentiment trend (last 14 days)</h2><canvas id="sentimentTrendLine" height="150"></canvas></div>
+            <div class="grid-2">
+                <div class="card"><h2><i class="fas fa-chart-line"></i> Sentiment trend (14 days)</h2><canvas id="sentimentTrendLine" height="150"></canvas></div>
                 <div class="card"><h2><i class="fas fa-chart-bar"></i> Topic distribution</h2><canvas id="topicBarChart" height="150"></canvas></div>
             </div>
-            <div class="card"><h2><i class="fas fa-robot"></i> AI insights & predictions</h2><div id="aiInsights">Analyzing patterns...</div></div>
+            <div class="card"><h2><i class="fas fa-robot"></i> AI predictive insights</h2><div id="aiInsightsText"></div></div>
+            <div class="card"><h2><i class="fas fa-map"></i> Interactive geospatial view</h2><div id="leafletMap" class="map-container"></div></div>
         </div>
 
-        <!-- ======================= ENGAGEMENT HUB ======================= -->
+        <!-- REPORTS -->
+        <div id="reports" class="page">
+            <div class="card">
+                <h2><i class="fas fa-download"></i> Generate Report</h2>
+                <div class="grid-2">
+                    <div><label>Report type</label><select id="reportType"><option>Weekly Summary</option><option>Monthly Trends</option><option>Topic Deep Dive</option></select></div>
+                    <div><label>Format</label><select id="reportFormat"><option>CSV</option><option>JSON</option></select></div>
+                </div>
+                <button id="generateReportBtn" style="margin-top:16px;"><i class="fas fa-file-export"></i> Export Report</button>
+                <div id="reportPreview" class="card" style="margin-top:20px; background:var(--bg);"><small>Preview will appear here</small></div>
+            </div>
+        </div>
+
+        <!-- ENGAGEMENT HUB -->
         <div id="engagement" class="page">
             <div class="card">
                 <h2><i class="fas fa-pen-alt"></i> Share your voice (simulate citizen input)</h2>
-                <div class="grid-2col">
-                    <div><textarea id="citizenMsgText" rows="3" placeholder="Type your message (Swahili/English)&#10;Ex: 'Maji yamekatika katika mtaa wa Kilimahewa'"></textarea></div>
-                    <div><select id="msgChannel"><option value="SMS">SMS</option><option value="Voice Call">Voice Call</option><option value="WhatsApp">WhatsApp</option><option value="Web">Web Form</option></select><br><br>
-                    <input type="text" id="citizenRegion" placeholder="Region (optional)" list="regionsList"><datalist id="regionsList"><option>Dar es Salaam</option><option>Arusha</option><option>Mwanza</option><option>Mbeya</option><option>Dodoma</option><option>Zanzibar</option></datalist>
-                    <button id="submitEngagementBtn" style="margin-top:15px; width:100%;"><i class="fas fa-paper-plane"></i> Submit & analyse</button></div>
+                <div class="grid-2">
+                    <div><textarea id="msgText" rows="3" placeholder="Type your message in Swahili/English..."></textarea></div>
+                    <div><select id="msgChannel"><option>SMS</option><option>Voice Call</option><option>WhatsApp</option><option>Web</option></select>
+                    <input type="text" id="msgRegion" placeholder="Region (optional)" list="regionList"><datalist id="regionList"><option>Dar es Salaam</option><option>Arusha</option><option>Mwanza</option><option>Mbeya</option><option>Dodoma</option><option>Zanzibar</option></datalist>
+                    <button id="submitMsgBtn" style="width:100%; margin-top:12px;"><i class="fas fa-paper-plane"></i> Submit & analyse</button></div>
                 </div>
             </div>
-            <div class="card"><h2><i class="fas fa-history"></i> Recent contributions by citizens</h2><div id="recentContributions"></div></div>
+            <div class="card"><h2><i class="fas fa-history"></i> Recent contributions</h2><div id="recentContributions"></div></div>
         </div>
 
-        <!-- ======================= SYSTEM STATUS ======================= -->
+        <!-- SYSTEM HEALTH -->
         <div id="system" class="page">
-            <div class="grid-2col">
-                <div class="card"><h2><i class="fas fa-microchip"></i> Platform health</h2><div id="sysHealth">✅ Data ingestion active<br>✅ NLP engine (Swahili/EN)<br>✅ Kafka streams OK<br>✅ Geospatial API online</div></div>
-                <div class="card"><h2><i class="fas fa-chart-simple"></i> Data sources</h2><div id="dataSources">📞 Telco partners: 4 active<br>💬 Social APIs: Twitter, FB, WhatsApp<br>📡 Community radio integration</div></div>
+            <div class="grid-2">
+                <div class="card"><h2><i class="fas fa-microchip"></i> Platform Status</h2><div id="sysStatus">✅ Data ingestion active<br>✅ NLP engine (Swahili/EN)<br>✅ Kafka streams healthy<br>✅ Geospatial API online</div></div>
+                <div class="card"><h2><i class="fas fa-chart-simple"></i> Data Sources</h2><div id="dataSources">📞 Telco partners: 4 active<br>💬 Social APIs: Twitter, FB, WhatsApp<br>📡 Community radio integration</div></div>
             </div>
-            <div class="card"><h2><i class="fas fa-gavel"></i> Compliance & privacy</h2><p>⚖️ Tanzania Personal Data Protection Act 2022 – full compliance. Data pseudonymized, consent ledger active. All analytics on aggregated data.</p></div>
+            <div class="card"><h2><i class="fas fa-gavel"></i> Compliance & Privacy</h2><p>⚖️ Tanzania Personal Data Protection Act 2022 – full compliance. Data pseudonymized, consent ledger active. All analytics on aggregated data.</p></div>
         </div>
-        <footer>© 2025 THEA – Total Human Engagement Analyst | Prototype demonstrating unified citizen listening & AI analytics</footer>
+        <footer>© 2025 THEA – Next‑gen citizen listening platform | Real‑time AI | Privacy by design</footer>
     </div>
+    <div class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></div>
 </div>
 
 <script>
-    // ---------- GLOBAL DATA ----------
+    // ---------- DATA LAYER ----------
     let messages = [];
+    const REGIONS = ["Dar es Salaam","Arusha","Mwanza","Mbeya","Dodoma","Zanzibar","Tanga","Morogoro","Kilimanjaro","Tabora"];
 
-    // helper: AI analysis (sentiment + topic)
+    // AI analysis: sentiment + topic + intent
     function analyzeMessage(text) {
         const lower = text.toLowerCase();
         let pos = 0, neg = 0;
-        const posWords = ["asante", "shukran", "good", "great", "excellent", "nzuri", "safi", "thank", "helpful", "bora"];
-        const negWords = ["shida", "tatizo", "broken", "haribika", "mbaya", "fail", "not working", "dawa hazipo", "umeme"];
+        const posWords = ["asante","shukran","good","great","excellent","nzuri","safi","thank","helpful","bora","nimefurahia"];
+        const negWords = ["shida","tatizo","broken","haribika","mbaya","fail","not working","dawa hazipo","umeme","malalamiko"];
         posWords.forEach(w => { if(lower.includes(w)) pos++; });
         negWords.forEach(w => { if(lower.includes(w)) neg++; });
         let sentiment = "neutral";
@@ -351,28 +301,24 @@
         return { sentiment, topic };
     }
 
-    // default regions list
-    const regionsList = ["Dar es Salaam","Arusha","Mwanza","Mbeya","Dodoma","Zanzibar","Tanga","Morogoro","Kilimanjaro","Tabora"];
-
-    function loadMockData() {
+    function loadData() {
         const stored = localStorage.getItem("thea_messages");
-        if(stored) {
-            messages = JSON.parse(stored);
-        } else {
+        if(stored) { messages = JSON.parse(stored); }
+        else {
             messages = [
-                { id: 1, text: "Water pump broken in Kigamboni, no clean water since 3 days", sentiment: "negative", topic: "water", timestamp: "2025-03-24T08:12:00", region: "Dar es Salaam", channel: "SMS" },
-                { id: 2, text: "Shukrani kwa huduma ya afya! watoa huduma walikuwa wakarimu sana.", sentiment: "positive", topic: "health", timestamp: "2025-03-24T09:45:00", region: "Arusha", channel: "Voice Call" },
-                { id: 3, text: "Tunahitaji barabara za lami mkoani Mwanza, lami imeharibika", sentiment: "negative", topic: "infrastructure", timestamp: "2025-03-23T14:20:00", region: "Mwanza", channel: "WhatsApp" },
-                { id: 4, text: "Elimu ya bure inasaidia, lakini vitabu vya kutosha havipo.", sentiment: "neutral", topic: "education", timestamp: "2025-03-23T11:05:00", region: "Mbeya", channel: "SMS" },
-                { id: 5, text: "Great mobile money services, but network is unstable in rural areas", sentiment: "negative", topic: "connectivity", timestamp: "2025-03-22T19:30:00", region: "Tabora", channel: "Web" },
-                { id: 6, text: "Maji safi yamefika kata yetu! asante serikali", sentiment: "positive", topic: "water", timestamp: "2025-03-22T07:50:00", region: "Dodoma", channel: "SMS" }
+                { id:1, text:"Water pump broken in Kigamboni, no clean water since 3 days", sentiment:"negative", topic:"water", timestamp:"2025-03-24T08:12:00", region:"Dar es Salaam", channel:"SMS" },
+                { id:2, text:"Shukrani kwa huduma ya afya! watoa huduma walikuwa wakarimu sana.", sentiment:"positive", topic:"health", timestamp:"2025-03-24T09:45:00", region:"Arusha", channel:"Voice Call" },
+                { id:3, text:"Tunahitaji barabara za lami mkoani Mwanza, lami imeharibika", sentiment:"negative", topic:"infrastructure", timestamp:"2025-03-23T14:20:00", region:"Mwanza", channel:"WhatsApp" },
+                { id:4, text:"Elimu ya bure inasaidia, lakini vitabu vya kutosha havipo.", sentiment:"neutral", topic:"education", timestamp:"2025-03-23T11:05:00", region:"Mbeya", channel:"SMS" },
+                { id:5, text:"Great mobile money services, but network is unstable in rural areas", sentiment:"negative", topic:"connectivity", timestamp:"2025-03-22T19:30:00", region:"Tabora", channel:"Web" },
+                { id:6, text:"Maji safi yamefika kata yetu! asante serikali", sentiment:"positive", topic:"water", timestamp:"2025-03-22T07:50:00", region:"Dodoma", channel:"SMS" }
             ];
-            persistMessages();
+            persistData();
         }
     }
-    function persistMessages() { localStorage.setItem("thea_messages", JSON.stringify(messages)); }
+    function persistData() { localStorage.setItem("thea_messages", JSON.stringify(messages)); }
 
-    function addNewMessage(text, channel, region) {
+    function addMessage(text, channel, region) {
         if(!text.trim()) return;
         const analysis = analyzeMessage(text);
         const newMsg = {
@@ -381,37 +327,37 @@
             sentiment: analysis.sentiment,
             topic: analysis.topic,
             timestamp: new Date().toISOString(),
-            region: region && regionsList.includes(region) ? region : regionsList[Math.floor(Math.random()*regionsList.length)],
+            region: region && REGIONS.includes(region) ? region : REGIONS[Math.floor(Math.random()*REGIONS.length)],
             channel: channel || "Web"
         };
         messages.unshift(newMsg);
-        persistMessages();
+        persistData();
         refreshAll();
     }
 
-    // ------ refresh all UI components across pages ------
-    let donutChart, trendMain, sentimentTrendChart, topicBarChart;
+    // --- UI refresh functions ---
+    let donutChart, trendMain, sentimentChart, topicChart, leafletMap;
     function refreshAll() {
-        updateStatsAndCommon();
+        updateStats();
         renderLiveFeed();
         renderDashboardCharts();
-        renderAnalyticsCharts();
+        renderAnalytics();
         renderRegionHeatmap();
         renderRecentContributions();
         updateAnomalyAlert();
         updateAIInsights();
+        if(leafletMap) updateMapMarkers();
     }
 
-    function updateStatsAndCommon() {
+    function updateStats() {
         const total = messages.length;
-        const posCount = messages.filter(m=>m.sentiment==="positive").length;
-        const posPercent = total===0?0:Math.round((posCount/total)*100);
+        const pos = messages.filter(m=>m.sentiment==="positive").length;
+        const posPercent = total===0?0:Math.round((pos/total)*100);
         document.getElementById("statTotal").innerText = total;
         document.getElementById("statSentiment").innerText = `${posPercent}%`;
         const topicsSet = new Set(messages.map(m=>m.topic));
         document.getElementById("statTopics").innerText = topicsSet.size;
 
-        // top topics dashboard
         const freq = new Map();
         messages.forEach(m=>freq.set(m.topic, (freq.get(m.topic)||0)+1));
         const sorted = Array.from(freq.entries()).sort((a,b)=>b[1]-a[1]).slice(0,5);
@@ -425,7 +371,7 @@
         if(filter) filtered = messages.filter(m=>m.text.toLowerCase().includes(filter));
         const feedDiv = document.getElementById("liveFeedContainer");
         if(!feedDiv) return;
-        if(filtered.length===0) { feedDiv.innerHTML="<div class='card'>No messages match filter</div>"; return; }
+        if(filtered.length===0) { feedDiv.innerHTML="<div class='card'>No messages match</div>"; return; }
         feedDiv.innerHTML = filtered.map(msg=>{
             const cls = msg.sentiment;
             const time = moment(msg.timestamp).fromNow();
@@ -445,18 +391,16 @@
         else if(ctxDonut){
             donutChart = new Chart(ctxDonut, { type:'doughnut', data:{ labels:['Positive','Negative','Neutral'], datasets:[{ data:[pos,neg,neu], backgroundColor:['#2a7f6e','#c7362b','#e6a017'] }] }, options:{ responsive:true, plugins:{ legend:{ position:'bottom' } } } });
         }
-        // trend line
-        const last7 = getLast7DaysCounts();
-        if(trendMain){
-            trendMain.data.datasets[0].data = last7; trendMain.update();
-        } else {
-            const ctxTrend = document.getElementById("trendMainChart")?.getContext("2d");
-            if(ctxTrend) trendMain = new Chart(ctxTrend, { type:'line', data:{ labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets:[{ label:'Interactions', data:last7, borderColor:'#1f5e4c', tension:0.3, fill:false }] } });
+        // 7-day trend
+        const counts = getLast7DaysCounts();
+        const ctxTrend = document.getElementById("trendChartMain")?.getContext("2d");
+        if(ctxTrend && trendMain) { trendMain.data.datasets[0].data = counts; trendMain.update(); }
+        else if(ctxTrend){
+            trendMain = new Chart(ctxTrend, { type:'line', data:{ labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets:[{ label:'Interactions', data:counts, borderColor:'#1f5e4c', tension:0.3, fill:false }] } });
         }
     }
 
     function getLast7DaysCounts() {
-        const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
         const counts = new Array(7).fill(0);
         const now = new Date();
         messages.forEach(msg=>{
@@ -470,28 +414,27 @@
         return counts;
     }
 
-    function renderAnalyticsCharts() {
+    function renderAnalytics() {
         const topicCounts = new Map();
         messages.forEach(m=>topicCounts.set(m.topic, (topicCounts.get(m.topic)||0)+1));
         const topics = Array.from(topicCounts.keys());
         const counts = topics.map(t=>topicCounts.get(t));
         const ctxBar = document.getElementById("topicBarChart")?.getContext("2d");
-        if(ctxBar && topicBarChart){ topicBarChart.data.labels=topics; topicBarChart.data.datasets[0].data=counts; topicBarChart.update(); }
+        if(ctxBar && topicChart) { topicChart.data.labels = topics; topicChart.data.datasets[0].data = counts; topicChart.update(); }
         else if(ctxBar){
-            topicBarChart = new Chart(ctxBar, { type:'bar', data:{ labels:topics, datasets:[{ label:'Message count', data:counts, backgroundColor:'#4b8c7a' }] }, options:{ responsive:true, plugins:{ legend:{ display:false } } } });
+            topicChart = new Chart(ctxBar, { type:'bar', data:{ labels:topics, datasets:[{ label:'Messages', data:counts, backgroundColor:'#4b8c7a' }] }, options:{ responsive:true, plugins:{ legend:{ display:false } } } });
         }
-        // sentiment trend last 14 days
-        const last14 = getSentimentTrendLast14();
+        // sentiment trend 14 days
+        const trend14 = getSentimentTrend14();
         const ctxLine = document.getElementById("sentimentTrendLine")?.getContext("2d");
-        if(ctxLine && sentimentTrendChart){ sentimentTrendChart.data.datasets[0].data=last14.pos; sentimentTrendChart.data.datasets[1].data=last14.neg; sentimentTrendChart.update(); }
+        if(ctxLine && sentimentChart) { sentimentChart.data.datasets[0].data = trend14.pos; sentimentChart.data.datasets[1].data = trend14.neg; sentimentChart.update(); }
         else if(ctxLine){
-            sentimentTrendChart = new Chart(ctxLine, { type:'line', data:{ labels:last14.labels, datasets:[{ label:'Positive %', data:last14.pos, borderColor:'#2a7f6e'},{ label:'Negative %', data:last14.neg, borderColor:'#c7362b'}] } });
+            sentimentChart = new Chart(ctxLine, { type:'line', data:{ labels:trend14.labels, datasets:[{ label:'Positive %', data:trend14.pos, borderColor:'#2a7f6e' },{ label:'Negative %', data:trend14.neg, borderColor:'#c7362b' }] }, options:{ responsive:true } });
         }
     }
 
-    function getSentimentTrendLast14() {
-        let labels=[];
-        let posArr=[], negArr=[];
+    function getSentimentTrend14() {
+        let labels=[], posArr=[], negArr=[];
         for(let i=13;i>=0;i--){
             const d = new Date(); d.setDate(d.getDate()-i);
             const dayStr = d.toISOString().slice(0,10);
@@ -511,10 +454,12 @@
         messages.forEach(m=>regionCount.set(m.region, (regionCount.get(m.region)||0)+1));
         const container = document.getElementById("regionHeatmapDashboard");
         if(container){
-            container.innerHTML = regionsList.map(reg=>{
+            container.innerHTML = REGIONS.map(reg=>{
                 const cnt = regionCount.get(reg)||0;
-                let intensity = cnt>=2 ? "high" : (cnt>=1?"med":"low");
-                return `<span class="region-pill" style="background:${intensity==='high'?'#1f5e4c':intensity==='med'?'#84b9a5':'#e2e8f0'}; color:${intensity==='high'?'white':'#1f2e3a'}">${reg} (${cnt})</span>`;
+                let intensity = cnt>=3 ? "high" : (cnt>=1?"med":"low");
+                let bg = intensity==='high' ? '#1f5e4c' : (intensity==='med' ? '#84b9a5' : '#e2e8f0');
+                let color = intensity==='high' ? 'white' : '#1f2e3a';
+                return `<span style="background:${bg}; color:${color}; padding:6px 12px; border-radius:40px;">${reg} (${cnt})</span>`;
             }).join('');
         }
     }
@@ -526,22 +471,85 @@
     }
 
     function updateAnomalyAlert() {
-        const waterMsgs = messages.filter(m=>m.topic==="water" && m.sentiment==="negative").length;
-        const alertDiv = document.getElementById("anomalyAlert");
-        if(waterMsgs>3) alertDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ⚠️ AI anomaly: high volume of water complaints in Dar/Mwanza. Action recommended.`;
-        else alertDiv.innerHTML = `<i class="fas fa-chart-line"></i> Real‑time monitoring: no critical spikes.`;
+        const waterNeg = messages.filter(m=>m.topic==="water" && m.sentiment==="negative").length;
+        const banner = document.getElementById("anomalyBanner");
+        if(waterNeg>3) banner.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ⚠️ AI alert: High volume of water complaints in Dar/Mwanza. Immediate action recommended.`;
+        else banner.innerHTML = `<i class="fas fa-chart-line"></i> Real‑time monitoring: no critical anomalies detected.`;
     }
 
     function updateAIInsights() {
-        const insightsDiv = document.getElementById("aiInsights");
         const totalNeg = messages.filter(m=>m.sentiment==="negative").length;
+        const total = messages.length;
+        const negRatio = total===0?0:Math.round((totalNeg/total)*100);
         const topTopic = [...new Map(messages.map(m=>[m.topic, (messages.filter(x=>x.topic===m.topic).length)]))].sort((a,b)=>b[1]-a[1])[0];
-        insightsDiv.innerHTML = `<p>🔍 <strong>Predictive summary:</strong> ${topTopic?`"${topTopic[0]}"`:"General"} is the dominant issue. Negative sentiment ratio: ${Math.round((totalNeg/messages.length)*100)}%.</p>
-        <p>📈 Next week forecast: Water & infrastructure complaints may rise by 12% based on historical patterns. Suggested proactive resource allocation.</p>`;
+        const insightDiv = document.getElementById("aiInsightsText");
+        insightDiv.innerHTML = `<p>🔍 <strong>Predictive summary:</strong> ${topTopic?topTopic[0].toUpperCase():"General"} is the dominant issue. Negative sentiment ratio: ${negRatio}%.</p>
+        <p>📈 Forecast: Water & infrastructure complaints may rise by 15% next week based on seasonal patterns. Proactive resource allocation advised.</p>
+        <p>🤖 AI recommends: Deploy rapid response teams to Dar es Salaam and Mwanza for water infrastructure.</p>`;
     }
 
-    // navigation
-    function initNavigation() {
+    // Map (Leaflet)
+    function initMap() {
+        const mapDiv = document.getElementById("leafletMap");
+        if(!mapDiv) return;
+        leafletMap = L.map(mapDiv).setView([-6.369, 34.888], 6);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(leafletMap);
+        updateMapMarkers();
+    }
+    function updateMapMarkers() {
+        if(!leafletMap) return;
+        leafletMap.eachLayer(layer => { if(layer instanceof L.Marker) leafletMap.removeLayer(layer); });
+        const regionCoords = {
+            "Dar es Salaam":[-6.792,39.208], "Arusha":[-3.386,36.682], "Mwanza":[-2.516,32.917], "Mbeya":[-8.907,33.466], "Dodoma":[-6.162,35.752], "Zanzibar":[-6.165,39.202], "Tanga":[-5.069,39.099], "Morogoro":[-6.826,37.671], "Kilimanjaro":[-3.067,37.355], "Tabora":[-5.016,32.826]
+        };
+        const regionCount = new Map();
+        messages.forEach(m=>regionCount.set(m.region, (regionCount.get(m.region)||0)+1));
+        for(let [reg, coord] of Object.entries(regionCoords)){
+            let count = regionCount.get(reg)||0;
+            if(count>0){
+                L.marker(coord).addTo(leafletMap).bindPopup(`<b>${reg}</b><br>${count} messages<br>${Math.round((messages.filter(m=>m.region===reg && m.sentiment==="positive").length/count)*100)}% positive`);
+            }
+        }
+    }
+
+    // Report generation
+    function generateReport() {
+        const type = document.getElementById("reportType").value;
+        const format = document.getElementById("reportFormat").value;
+        let data = { generated: new Date().toISOString(), type, total: messages.length, messages: messages.slice(0,100) };
+        let output = "";
+        if(format === "CSV"){
+            const headers = ["id","text","sentiment","topic","timestamp","region","channel"];
+            const rows = messages.map(m => headers.map(h => JSON.stringify(m[h] || "")).join(","));
+            output = [headers.join(","), ...rows].join("\n");
+        } else {
+            output = JSON.stringify(data, null, 2);
+        }
+        const previewDiv = document.getElementById("reportPreview");
+        previewDiv.innerHTML = `<pre style="max-height:300px; overflow:auto;">${output.substring(0,1500)}${output.length>1500 ? "..." : ""}</pre><button id="downloadReportBtn" class="btn" style="margin-top:8px;">Download ${format}</button>`;
+        document.getElementById("downloadReportBtn")?.addEventListener("click",()=>{
+            const blob = new Blob([output], {type: format==="CSV" ? "text/csv" : "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `thea_report_${Date.now()}.${format.toLowerCase()}`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    // Theme toggle
+    function initTheme() {
+        const stored = localStorage.getItem("thea_theme");
+        if(stored === "dark") document.body.classList.add("dark");
+        document.getElementById("themeToggle").addEventListener("click",()=>{
+            document.body.classList.toggle("dark");
+            localStorage.setItem("thea_theme", document.body.classList.contains("dark") ? "dark" : "light");
+        });
+    }
+
+    // Navigation
+    function initNav() {
         const navs = document.querySelectorAll(".nav-item");
         const pages = document.querySelectorAll(".page");
         navs.forEach(nav=>{
@@ -551,32 +559,34 @@
                 nav.classList.add("active");
                 pages.forEach(p=>p.classList.remove("active-page"));
                 document.getElementById(pageId).classList.add("active-page");
-                if(pageId==="livefeed") renderLiveFeed();
-                if(pageId==="analytics") renderAnalyticsCharts();
+                if(pageId === "analytics") { setTimeout(()=>{ if(leafletMap) leafletMap.invalidateSize(); }, 100); }
+                if(pageId === "livefeed") renderLiveFeed();
                 refreshAll();
             });
         });
     }
 
-    // form submit
-    document.getElementById("submitEngagementBtn")?.addEventListener("click",()=>{
-        const text = document.getElementById("citizenMsgText").value;
+    // Event bindings
+    document.getElementById("submitMsgBtn")?.addEventListener("click",()=>{
+        const text = document.getElementById("msgText").value;
         const channel = document.getElementById("msgChannel").value;
-        const region = document.getElementById("citizenRegion").value;
-        if(text.trim()===""){ alert("Please enter a message"); return; }
-        addNewMessage(text, channel, region);
-        document.getElementById("citizenMsgText").value = "";
-        document.getElementById("citizenRegion").value = "";
+        const region = document.getElementById("msgRegion").value;
+        if(!text.trim()){ alert("Please enter a message"); return; }
+        addMessage(text, channel, region);
+        document.getElementById("msgText").value = "";
+        document.getElementById("msgRegion").value = "";
         refreshAll();
         alert("✅ Message submitted! THEA analytics updated.");
     });
-
     document.getElementById("feedFilter")?.addEventListener("input",()=>renderLiveFeed());
+    document.getElementById("generateReportBtn")?.addEventListener("click",generateReport);
 
-    loadMockData();
+    loadData();
+    initMap();
+    initTheme();
+    initNav();
     refreshAll();
-    initNavigation();
-    setInterval(()=>{ refreshAll(); }, 5000); // simulate realtime updates
+    setInterval(()=>{ refreshAll(); }, 7000);
 </script>
 </body>
 </html>
