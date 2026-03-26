@@ -2,182 +2,136 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>THEA · Total Human Engagement Analyst | Tanzania</title>
-    <!-- Font Awesome -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>THEA 7.0 · Total Human Engagement Analyst | Tanzania</title>
+    <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Leaflet + plugins -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     <!-- Moment.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
-    <!-- Notyf for notifications -->
+    <!-- Notyf for toasts -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css">
     <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <!-- html2canvas + jspdf for PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-        }
-        body {
-            background: #f4f7fc;
-            transition: background 0.2s;
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+        :root {
+            --bg: #f4f7fc; --card-bg: white; --text: #1e293b; --text-light: #475569;
+            --border: #e2e8f0; --primary: #1f5e4c; --primary-dark: #0e4436;
+            --positive: #2b7e3e; --negative: #c7362b; --neutral: #e6a017;
+            --sidebar-bg: #0b2b26; --sidebar-text: #e0f2e9;
+            --urgent: #c7362b; --high: #e67e22; --normal: #3498db; --low: #95a5a6;
         }
         body.dark {
-            background: #0f172a;
-            color: #e2e8f0;
+            --bg: #0f172a; --card-bg: #1e293b; --text: #e2e8f0; --text-light: #94a3b8;
+            --border: #334155; --primary: #2d7a64; --primary-dark: #1f5e4c;
         }
-        .app {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+        body { background: var(--bg); transition: background 0.2s; }
+        .app { max-width: 1400px; margin: 0 auto; padding: 20px; }
         /* Header */
         .header {
-            background: white;
-            border-radius: 28px;
-            padding: 20px 28px;
-            margin-bottom: 28px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
+            background: var(--card-bg); border-radius: 28px; padding: 20px 28px; margin-bottom: 28px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+            border: 1px solid var(--border);
         }
-        .dark .header { background: #1e293b; }
-        .logo h1 {
-            font-size: 1.8rem;
-            background: linear-gradient(135deg, #1f5e4c, #2a7f6e);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-        }
+        .logo h1 { font-size: 1.8rem; background: linear-gradient(135deg, #1f5e4c, #2a7f6e); background-clip: text; -webkit-background-clip: text; color: transparent; }
         /* Navigation */
         .nav {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 28px;
-            background: white;
-            padding: 8px 16px;
-            border-radius: 60px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; background: var(--card-bg);
+            padding: 8px 16px; border-radius: 60px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--border);
         }
-        .dark .nav { background: #1e293b; }
         .nav-item {
-            padding: 10px 20px;
-            border-radius: 40px;
-            cursor: pointer;
-            transition: 0.2s;
-            font-weight: 500;
+            padding: 10px 20px; border-radius: 40px; cursor: pointer; transition: 0.2s; font-weight: 500;
         }
-        .nav-item.active {
-            background: #1f5e4c;
-            color: white;
-        }
-        .nav-item:hover:not(.active) {
-            background: #e2e8f0;
-        }
-        .dark .nav-item:hover:not(.active) {
-            background: #334155;
-        }
+        .nav-item.active { background: var(--primary); color: white; }
+        .nav-item:hover:not(.active) { background: var(--border); }
         /* Pages */
-        .page {
-            display: none;
-            animation: fade 0.2s;
-        }
-        .page.active-page {
-            display: block;
-        }
-        @keyframes fade {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        .page { display: none; animation: fade 0.2s; }
+        .page.active-page { display: block; }
+        @keyframes fade { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
         /* Cards */
         .card {
-            background: white;
-            border-radius: 24px;
-            padding: 20px;
-            margin-bottom: 24px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            border: 1px solid #e2e8f0;
-        }
-        .dark .card {
-            background: #1e293b;
-            border-color: #334155;
+            background: var(--card-bg); border-radius: 24px; padding: 20px; margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border);
         }
         .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 24px; }
         .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
         .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; }
-        .stat-number {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: #1f5e4c;
-        }
+        .stat-number { font-size: 2.5rem; font-weight: 800; color: var(--primary); }
+        .badge { background: var(--border); padding: 4px 12px; border-radius: 40px; font-size: 0.75rem; }
         .message-item {
-            background: #f9fafc;
-            border-radius: 16px;
-            padding: 12px;
-            margin-bottom: 12px;
-            border-left: 5px solid;
+            background: var(--bg); border-radius: 16px; padding: 12px; margin-bottom: 12px;
+            border-left: 5px solid; cursor: pointer;
         }
-        .dark .message-item { background: #0f172a; }
-        .priority-urgent { border-left-color: #c7362b; }
-        .priority-high { border-left-color: #e67e22; }
-        .priority-normal { border-left-color: #3498db; }
-        .priority-low { border-left-color: #95a5a6; }
+        .priority-urgent { border-left-color: var(--urgent); }
+        .priority-high { border-left-color: var(--high); }
+        .priority-normal { border-left-color: var(--normal); }
+        .priority-low { border-left-color: var(--low); }
         button, .btn {
-            background: #1f5e4c;
-            border: none;
-            color: white;
-            font-weight: 600;
-            padding: 8px 20px;
-            border-radius: 40px;
-            cursor: pointer;
+            background: var(--primary); border: none; color: white; font-weight: 600;
+            padding: 8px 20px; border-radius: 40px; cursor: pointer; transition: 0.2s;
         }
-        button:hover { background: #0e4436; }
+        button:hover { background: var(--primary-dark); }
         input, select, textarea {
-            width: 100%;
-            padding: 10px 16px;
-            border-radius: 40px;
-            border: 1px solid #cbd5e1;
-            background: white;
+            width: 100%; padding: 10px 16px; border-radius: 40px; border: 1px solid var(--border);
+            background: var(--card-bg); color: var(--text);
         }
-        .dark input, .dark select, .dark textarea {
-            background: #0f172a;
-            border-color: #334155;
-            color: #e2e8f0;
+        .filter-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+        .map-container { height: 400px; border-radius: 24px; overflow: hidden; margin-top: 12px; }
+        .alert-banner {
+            background: #ffefdb; border-left: 5px solid #e6a017; padding: 12px 20px;
+            border-radius: 20px; margin-bottom: 20px;
         }
-        .filter-bar {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
+        .dark .alert-banner { background: #2d2a1f; }
+        .word-cloud { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center; padding: 16px; }
+        .gauge { text-align: center; font-size: 2rem; font-weight: 800; }
+        .progress-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin: 8px 0; }
+        .progress-fill { height: 100%; background: var(--primary); width: 0%; }
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;
         }
-        footer {
-            text-align: center;
-            font-size: 0.75rem;
-            color: #64748b;
-            margin-top: 40px;
+        .modal-content {
+            background: var(--card-bg); border-radius: 28px; max-width: 600px; width: 90%; padding: 24px; position: relative;
         }
+        .close-modal { position: absolute; top: 16px; right: 20px; font-size: 24px; cursor: pointer; }
+        footer { text-align: center; font-size: 0.7rem; margin-top: 40px; color: var(--text-light); }
         .theme-toggle {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #1f5e4c;
-            border-radius: 50%;
-            width: 48px;
-            height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            z-index: 100;
+            position: fixed; bottom: 20px; right: 20px; background: var(--primary); border-radius: 50%;
+            width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
-        @media (max-width: 700px) {
-            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+        @media (max-width: 700px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+        .role-selector { display: flex; gap: 8px; margin-top: 12px; }
+        .role-btn { background: var(--border); color: var(--text); padding: 4px 12px; border-radius: 40px; cursor: pointer; font-size: 0.75rem; }
+        .role-btn.active { background: var(--primary); color: white; }
+        .chat-widget {
+            position: fixed; bottom: 80px; right: 20px; width: 300px; background: var(--card-bg);
+            border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 50;
+            display: none; flex-direction: column; border: 1px solid var(--border);
+        }
+        .chat-widget.active { display: flex; }
+        .chat-header { background: var(--primary); color: white; padding: 12px; border-radius: 20px 20px 0 0; cursor: pointer; }
+        .chat-messages { height: 250px; overflow-y: auto; padding: 12px; font-size: 0.85rem; }
+        .chat-input { display: flex; padding: 8px; border-top: 1px solid var(--border); }
+        .chat-input input { flex: 1; border-radius: 40px; margin-right: 8px; }
+        .chat-toggle {
+            position: fixed; bottom: 20px; right: 20px; background: var(--primary);
+            border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center;
+            justify-content: center; cursor: pointer; z-index: 49; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
     </style>
 </head>
@@ -188,140 +142,226 @@
             <h1><i class="fas fa-chart-network"></i> THEA 7.0</h1>
             <p>Total Human Engagement Analyst | Tanzania</p>
         </div>
-        <div>
-            <span class="badge" style="background:#eef2fa; padding:6px 12px; border-radius:40px;">
-                <i class="fas fa-shield-alt"></i> PDP Act 2022 compliant
-            </span>
+        <div class="role-selector">
+            <span class="role-btn active" data-role="analyst">Analyst</span>
+            <span class="role-btn" data-role="admin">Admin</span>
         </div>
     </div>
 
     <div class="nav">
         <div class="nav-item active" data-page="dashboard">Dashboard</div>
         <div class="nav-item" data-page="livefeed">Live Feed</div>
-        <div class="nav-item" data-page="analytics">Analytics</div>
-        <div class="nav-item" data-page="engagement">Engagement</div>
-        <div class="nav-item" data-page="system">System</div>
+        <div class="nav-item" data-page="analytics">AI Analytics</div>
+        <div class="nav-item" data-page="reports">Reports</div>
+        <div class="nav-item" data-page="engagement">Engagement Hub</div>
+        <div class="nav-item" data-page="system">System Health</div>
     </div>
 
     <!-- Dashboard Page -->
     <div id="dashboard" class="page active-page">
+        <div class="alert-banner" id="anomalyBanner"><i class="fas fa-bell"></i> AI anomaly detection active – monitoring real‑time spikes</div>
         <div class="grid-4">
-            <div class="card"><h3><i class="fas fa-inbox"></i> Total Messages</h3><div class="stat-number" id="statTotal">0</div></div>
-            <div class="card"><h3><i class="fas fa-smile"></i> Avg Sentiment</h3><div class="stat-number" id="statSentiment">0</div><span>/100</span></div>
+            <div class="card"><h3><i class="fas fa-inbox"></i> Total Interactions</h3><div class="stat-number" id="statTotal">0</div></div>
+            <div class="card"><h3><i class="fas fa-smile"></i> Avg Sentiment Score</h3><div class="stat-number" id="statSentiment">0</div><span>/100</span></div>
             <div class="card"><h3><i class="fas fa-tags"></i> Active Topics</h3><div class="stat-number" id="statTopics">0</div></div>
-            <div class="card"><h3><i class="fas fa-exclamation-triangle"></i> Urgent</h3><div class="stat-number" id="statUrgent">0</div></div>
+            <div class="card"><h3><i class="fas fa-exclamation-triangle"></i> Urgent Messages</h3><div class="stat-number" id="statUrgent">0</div></div>
         </div>
         <div class="grid-2">
-            <div class="card"><h2><i class="fas fa-chart-pie"></i> Sentiment</h2><canvas id="sentimentChart" height="200"></canvas></div>
-            <div class="card"><h2><i class="fas fa-fire"></i> Top Issues</h2><div id="topTopics"></div></div>
+            <div class="card"><h2><i class="fas fa-chart-pie"></i> Sentiment Breakdown</h2><canvas id="dashboardDonut" height="180"></canvas></div>
+            <div class="card"><h2><i class="fas fa-fire"></i> Top Issues</h2><div id="topTopicsDashboard"></div></div>
         </div>
-        <div class="card"><h2><i class="fas fa-chart-line"></i> Weekly Trend</h2><canvas id="trendChart" height="100"></canvas></div>
-        <div class="card"><h2><i class="fas fa-cloud"></i> Word Cloud</h2><div id="wordCloud" class="word-cloud" style="display:flex; flex-wrap:wrap; gap:10px;"></div></div>
+        <div class="card"><h2><i class="fas fa-chart-line"></i> 7-Day Engagement Trend</h2><canvas id="trendChartMain" height="100"></canvas></div>
+        <div class="card"><h2><i class="fas fa-cloud"></i> Word Cloud (click to filter)</h2><div id="wordCloudContainer" class="word-cloud"></div></div>
+        <div class="grid-2">
+            <div class="card"><h2><i class="fas fa-chart-simple"></i> Current vs Previous Period</h2><div id="comparisonStats" class="grid-2" style="gap:12px;"></div></div>
+            <div class="card"><h2><i class="fas fa-tachometer-alt"></i> Sentiment Intensity Gauge</h2><div id="gaugeContainer" class="gauge">0%</div><div class="progress-bar"><div id="gaugeFill" class="progress-fill" style="width:0%"></div></div></div>
+        </div>
     </div>
 
     <!-- Live Feed Page -->
     <div id="livefeed" class="page">
         <div class="card">
             <div class="filter-bar">
-                <input type="text" id="searchKeyword" placeholder="Filter by keyword...">
-                <select id="filterSentiment"><option value="">All sentiments</option><option value="positive">Positive</option><option value="negative">Negative</option><option value="neutral">Neutral</option></select>
-                <select id="filterPriority"><option value="">All priorities</option><option value="urgent">Urgent</option><option value="high">High</option><option value="normal">Normal</option><option value="low">Low</option></select>
-                <select id="filterTopic"><option value="">All topics</option><option value="water">Water</option><option value="health">Health</option><option value="infrastructure">Infrastructure</option><option value="education">Education</option><option value="energy">Energy</option><option value="connectivity">Connectivity</option></select>
+                <input type="text" id="feedKeyword" placeholder="Keyword filter" style="flex:1;">
+                <div class="checkbox-group"><span>Sentiments:</span>
+                    <label><input type="checkbox" value="positive" class="sentiment-filter"> Positive</label>
+                    <label><input type="checkbox" value="negative" class="sentiment-filter"> Negative</label>
+                    <label><input type="checkbox" value="neutral" class="sentiment-filter"> Neutral</label>
+                </div>
+                <div class="checkbox-group"><span>Priorities:</span>
+                    <label><input type="checkbox" value="urgent" class="priority-filter"> Urgent</label>
+                    <label><input type="checkbox" value="high" class="priority-filter"> High</label>
+                    <label><input type="checkbox" value="normal" class="priority-filter"> Normal</label>
+                    <label><input type="checkbox" value="low" class="priority-filter"> Low</label>
+                </div>
+                <select id="feedTopic"><option value="">All topics</option><option value="water">Water</option><option value="health">Health</option><option value="infrastructure">Infrastructure</option><option value="education">Education</option><option value="energy">Energy</option><option value="connectivity">Connectivity</option></select>
+                <select id="feedRegion"><option value="">All regions</option></select>
+                <input type="date" id="feedDateFrom" placeholder="From">
+                <input type="date" id="feedDateTo" placeholder="To">
             </div>
-            <div id="messageList" style="max-height: 500px; overflow-y: auto;"></div>
+            <div id="liveFeedContainer" style="max-height: 550px; overflow-y: auto; margin-top: 20px;"></div>
         </div>
     </div>
 
-    <!-- Analytics Page -->
+    <!-- AI Analytics Page -->
     <div id="analytics" class="page">
         <div class="grid-2">
-            <div class="card"><h2>Sentiment Trend (14d)</h2><canvas id="trendLineChart" height="150"></canvas></div>
-            <div class="card"><h2>Topic Distribution</h2><canvas id="topicChart" height="150"></canvas></div>
+            <div class="card"><h2><i class="fas fa-chart-line"></i> Sentiment trend (14 days + forecast)</h2><canvas id="sentimentTrendLine" height="150"></canvas></div>
+            <div class="card"><h2><i class="fas fa-chart-bar"></i> Topic distribution</h2><canvas id="topicBarChart" height="150"></canvas></div>
         </div>
-        <div class="card"><h2>AI Insights</h2><div id="aiInsights"></div></div>
-        <div class="card"><h2>Sentiment by Region</h2><div id="regionSentiment" class="grid-3"></div></div>
+        <div class="card"><h2><i class="fas fa-chart-line"></i> Trending Topics (last 7 days)</h2><canvas id="trendingTopicsChart" height="120"></canvas></div>
+        <div class="card"><h2><i class="fas fa-chart-simple"></i> Sentiment by Channel</h2><canvas id="sentimentByChannelChart" height="150"></canvas></div>
+        <div class="card"><h2><i class="fas fa-chart-radar"></i> Topic Radar (priority weighted)</h2><canvas id="radarChart" height="200"></canvas></div>
+        <div class="card"><h2><i class="fas fa-robot"></i> AI predictive insights</h2><div id="aiInsightsText"></div></div>
+        <div class="card"><h2><i class="fas fa-chart-simple"></i> Sentiment by Region</h2><div id="sentimentByRegion" class="grid-3"></div></div>
+        <div class="card"><h2><i class="fas fa-map"></i> Interactive geospatial view (heatmap + cluster)</h2><div id="leafletMap" class="map-container"></div></div>
     </div>
 
-    <!-- Engagement Page -->
-    <div id="engagement" class="page">
+    <!-- Reports Page -->
+    <div id="reports" class="page">
         <div class="card">
-            <h2><i class="fas fa-pen-alt"></i> Submit a Message</h2>
+            <h2><i class="fas fa-download"></i> Generate Report</h2>
             <div class="grid-2">
-                <div><textarea id="newMessage" rows="3" placeholder="Type your message..."></textarea></div>
-                <div>
-                    <select id="msgChannel"><option>SMS</option><option>Voice</option><option>WhatsApp</option><option>Web</option></select>
-                    <input type="text" id="msgRegion" placeholder="Region (optional)">
-                    <button id="submitMessage" style="margin-top:12px;">Submit & Analyse</button>
-                </div>
+                <div><label>Report type</label><select id="reportType"><option>Weekly Summary</option><option>Monthly Trends</option><option>Topic Deep Dive</option></select></div>
+                <div><label>Format</label><select id="reportFormat"><option>CSV</option><option>JSON</option><option>Excel (XLSX)</option><option>PDF (Dashboard)</option></select></div>
+            </div>
+            <button id="generateReportBtn" style="margin-top:16px;"><i class="fas fa-file-export"></i> Export Report</button>
+            <div id="reportPreview" class="card" style="margin-top:20px;"><small>Preview will appear here</small></div>
+        </div>
+        <div class="card">
+            <h2><i class="fas fa-database"></i> Data Management</h2>
+            <div class="flex-between" style="gap:12px; flex-wrap:wrap;">
+                <button id="exportDataBtn"><i class="fas fa-download"></i> Export All Data (JSON)</button>
+                <button id="importDataBtn"><i class="fas fa-upload"></i> Import Data</button>
+                <input type="file" id="importFile" accept=".json" style="display:none;">
+                <button id="resetDataBtn" style="background:#c7362b;"><i class="fas fa-trash"></i> Reset to Demo</button>
             </div>
         </div>
-        <div class="card"><h2>Recent Contributions</h2><div id="recentMsgs"></div></div>
     </div>
 
-    <!-- System Page -->
+    <!-- Engagement Hub -->
+    <div id="engagement" class="page">
+        <div class="card">
+            <div class="flex-between"><h2><i class="fas fa-pen-alt"></i> Share your voice</h2><div class="lang-switch" id="langSwitch" style="cursor:pointer; background:var(--primary); padding:4px 12px; border-radius:40px;"><i class="fas fa-language"></i> Kiswahili</div></div>
+            <div class="grid-2">
+                <div><textarea id="msgText" rows="3" placeholder="Type your message in Swahili/English..."></textarea></div>
+                <div><select id="msgChannel"><option>SMS</option><option>Voice Call</option><option>WhatsApp</option><option>Web</option><option>Telegram</option><option>Facebook</option></select>
+                <input type="text" id="msgRegion" placeholder="Region (optional)" list="regionList"><datalist id="regionList"></datalist>
+                <button id="submitMsgBtn" style="width:100%; margin-top:12px;"><i class="fas fa-paper-plane"></i> Submit & analyse</button></div>
+            </div>
+        </div>
+        <div class="card"><h2><i class="fas fa-history"></i> Recent contributions</h2><div id="recentContributions"></div></div>
+    </div>
+
+    <!-- System Health -->
     <div id="system" class="page">
-        <div class="card"><h2>System Health</h2><div id="sysHealth">✅ Data ingestion active<br>✅ NLP engine online<br>✅ API responding</div></div>
-        <div class="card"><h2>Data Management</h2><button id="exportData">Export Data (JSON)</button> <button id="resetData">Reset Demo Data</button></div>
-        <div class="card"><h2>Simulation</h2><button id="toggleSim">Pause Simulation</button> <span id="simStatus">Active</span></div>
+        <div class="grid-2">
+            <div class="card"><h2><i class="fas fa-microchip"></i> Platform Status</h2><div id="sysStatus">✅ Data ingestion active<br>✅ NLP engine (Swahili/EN)<br>✅ Kafka streams healthy<br>✅ Geospatial API online</div></div>
+            <div class="card"><h2><i class="fas fa-chart-simple"></i> Performance Metrics</h2>
+                <div>API Response Time: <span id="apiLatency">120</span> ms</div><div class="progress-bar"><div class="progress-fill" id="apiFill" style="width:12%"></div></div>
+                <div>Uptime: <span id="uptime">99.98</span>%</div><div class="progress-bar"><div class="progress-fill" id="uptimeFill" style="width:99.98%"></div></div>
+                <div>Throughput: <span id="throughput">245</span> msgs/min</div>
+            </div>
+        </div>
+        <div class="card"><h2><i class="fas fa-chart-line"></i> System Load (simulated)</h2><canvas id="systemLoadChart" height="100"></canvas></div>
+        <div class="card"><h2><i class="fas fa-gavel"></i> Compliance & Privacy</h2><p>⚖️ Tanzania Personal Data Protection Act 2022 – full compliance. Data pseudonymized, consent ledger active. All analytics on aggregated data.</p></div>
+        <div class="card"><h2><i class="fas fa-cog"></i> Simulation Control</h2>
+            <div class="simulation-controls" style="display:flex; gap:12px;">
+                <button id="toggleSimulationBtn"><i class="fas fa-pause"></i> Pause Simulation</button>
+                <select id="simulationInterval"><option value="5000">5 sec</option><option value="10000" selected>10 sec</option><option value="20000">20 sec</option></select>
+            </div>
+        </div>
     </div>
-
-    <footer>© 2025 THEA – Real‑time citizen engagement | Privacy by design</footer>
+    <footer>© 2025 THEA 7.0 – Advanced citizen listening platform | Real‑time AI | Privacy by design</footer>
+</div>
+<div class="chat-toggle" id="chatToggle"><i class="fas fa-comment-dots"></i></div>
+<div class="chat-widget" id="chatWidget">
+    <div class="chat-header" id="chatHeader">THEA Assistant <i class="fas fa-chevron-down" style="float:right;"></i></div>
+    <div class="chat-messages" id="chatMessages"><div>🤖 Hello! I'm THEA Assistant. Ask me about the platform or get insights.</div></div>
+    <div class="chat-input"><input type="text" id="chatInput" placeholder="Ask me..."><button id="chatSend">Send</button></div>
+</div>
+<div id="messageModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h3 id="modalTitle">Message Details</h3>
+        <p id="modalText"></p>
+        <p><strong>Sentiment:</strong> <span id="modalSentiment"></span></p>
+        <p><strong>Priority:</strong> <span id="modalPriority"></span></p>
+        <p><strong>Topic:</strong> <span id="modalTopic"></span></p>
+        <p><strong>Region:</strong> <span id="modalRegion"></span></p>
+        <p><strong>Channel:</strong> <span id="modalChannel"></span></p>
+        <p><strong>Timestamp:</strong> <span id="modalTimestamp"></span></p>
+        <div id="adminActions" style="display:none;">
+            <label>Status:</label>
+            <select id="messageStatus"><option>Pending</option><option>In Progress</option><option>Resolved</option></select>
+            <button id="updateStatusBtn">Update Status</button>
+        </div>
+    </div>
 </div>
 <div class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></div>
 
 <script>
-    // ======================= DATA =======================
+    // ======================= DATA & GLOBALS =======================
     let messages = [];
-    let simulationInterval = null;
-    let simulationActive = true;
-    const notyf = new Notyf({ duration: 2000, position: { x: 'right', y: 'top' } });
     const REGIONS = ["Dar es Salaam","Arusha","Mwanza","Mbeya","Dodoma","Zanzibar","Tanga","Morogoro","Kilimanjaro","Tabora"];
+    let simulationActive = true;
+    let simulationTimer = null;
+    let simulationIntervalMs = 10000;
+    let leafletMap = null, markerCluster = null, heatLayer = null;
+    let notyf = new Notyf({ duration: 3000, position: { x: 'right', y: 'top' } });
+    let currentLang = "en";
+    let currentRole = "analyst";
+    let selectedMessageId = null;
+    const translations = {
+        en: { placeholder: "Type your message in Swahili/English...", submit: "Submit & analyse", langLabel: "Kiswahili" },
+        sw: { placeholder: "Andika ujumbe wako kwa Kiswahili/English...", submit: "Tuma & chambua", langLabel: "English" }
+    };
 
-    // Helper: AI analysis
+    // AI analysis function
     function analyzeMessage(text) {
         const lower = text.toLowerCase();
         let pos = 0, neg = 0;
-        const posWords = ["asante","shukran","good","great","excellent","nzuri","safi","thank","helpful","bora","pongezi"];
-        const negWords = ["shida","tatizo","broken","haribika","mbaya","fail","not working","dawa hazipo","umeme","malalamiko"];
+        const posWords = ["asante","shukran","good","great","excellent","nzuri","safi","thank","helpful","bora","pongezi","happy"];
+        const negWords = ["shida","tatizo","broken","haribika","mbaya","fail","not working","dawa hazipo","umeme","malalamiko","corruption","bribe"];
         posWords.forEach(w => { if(lower.includes(w)) pos++; });
         negWords.forEach(w => { if(lower.includes(w)) neg++; });
         let sentiment = "neutral";
         let sentimentScore = 50;
         if(pos > neg) { sentiment = "positive"; sentimentScore = 50 + Math.min(50, pos * 15); }
         else if(neg > pos) { sentiment = "negative"; sentimentScore = 50 - Math.min(50, neg * 15); }
+        sentimentScore = Math.min(100, Math.max(0, sentimentScore));
         let topic = "general";
         if(lower.includes("maji")||lower.includes("water")) topic = "water";
-        else if(lower.includes("afya")||lower.includes("health")||lower.includes("hospital")) topic = "health";
-        else if(lower.includes("barabara")||lower.includes("road")) topic = "infrastructure";
-        else if(lower.includes("elimu")||lower.includes("school")) topic = "education";
+        else if(lower.includes("afya")||lower.includes("health")||lower.includes("hospital")||lower.includes("dawa")) topic = "health";
+        else if(lower.includes("barabara")||lower.includes("road")||lower.includes("infrastructure")) topic = "infrastructure";
+        else if(lower.includes("elimu")||lower.includes("school")||lower.includes("vitabu")) topic = "education";
         else if(lower.includes("umeme")||lower.includes("electricity")) topic = "energy";
         else if(lower.includes("simu")||lower.includes("network")) topic = "connectivity";
         let priority = "normal";
-        if(lower.includes("emergency")||lower.includes("dharura")) priority = "urgent";
-        else if(lower.includes("broken")||lower.includes("haribika")||lower.includes("shida")) priority = "high";
+        const urgentWords = ["emergency","dharura","death","kifo","collapse","danger"];
+        const highWords = ["broken","not working","haribika","shida","tatizo"];
+        if(urgentWords.some(w => lower.includes(w))) priority = "urgent";
+        else if(highWords.some(w => lower.includes(w))) priority = "high";
         else if(sentiment === "positive") priority = "low";
         return { sentiment, sentimentScore, topic, priority };
     }
 
-    function loadDemoData() {
+    function persistData() { localStorage.setItem("thea_messages", JSON.stringify(messages)); }
+    function loadData() {
         const stored = localStorage.getItem("thea_messages");
-        if(stored) {
-            messages = JSON.parse(stored);
-        } else {
-            messages = [
-                { id:1, text:"Water pump broken in Kigamboni, no clean water since 3 days", sentiment:"negative", sentimentScore:20, topic:"water", priority:"high", timestamp:"2025-03-24T08:12:00", region:"Dar es Salaam", channel:"SMS" },
-                { id:2, text:"Shukrani kwa huduma ya afya! watoa huduma walikuwa wakarimu sana.", sentiment:"positive", sentimentScore:85, topic:"health", priority:"low", timestamp:"2025-03-24T09:45:00", region:"Arusha", channel:"Voice" },
-                { id:3, text:"Tunahitaji barabara za lami mkoani Mwanza", sentiment:"negative", sentimentScore:35, topic:"infrastructure", priority:"high", timestamp:"2025-03-23T14:20:00", region:"Mwanza", channel:"WhatsApp" },
-                { id:4, text:"Elimu ya bure inasaidia, lakini vitabu vya kutosha havipo.", sentiment:"neutral", sentimentScore:50, topic:"education", priority:"normal", timestamp:"2025-03-23T11:05:00", region:"Mbeya", channel:"SMS" },
-                { id:5, text:"Network is unstable in rural areas", sentiment:"negative", sentimentScore:40, topic:"connectivity", priority:"high", timestamp:"2025-03-22T19:30:00", region:"Tabora", channel:"Web" },
-                { id:6, text:"Maji safi yamefika kata yetu! asante serikali", sentiment:"positive", sentimentScore:90, topic:"water", priority:"low", timestamp:"2025-03-22T07:50:00", region:"Dodoma", channel:"SMS" }
-            ];
-            saveData();
-        }
+        if(stored) { messages = JSON.parse(stored); }
+        else { resetToDemo(); }
     }
-
-    function saveData() {
-        localStorage.setItem("thea_messages", JSON.stringify(messages));
+    function resetToDemo() {
+        messages = [
+            { id:1, text:"Water pump broken in Kigamboni, no clean water since 3 days", sentiment:"negative", sentimentScore:20, topic:"water", priority:"high", timestamp:"2025-03-24T08:12:00", region:"Dar es Salaam", channel:"SMS", status:"Pending" },
+            { id:2, text:"Shukrani kwa huduma ya afya! watoa huduma walikuwa wakarimu sana.", sentiment:"positive", sentimentScore:85, topic:"health", priority:"low", timestamp:"2025-03-24T09:45:00", region:"Arusha", channel:"Voice Call", status:"Resolved" },
+            { id:3, text:"Tunahitaji barabara za lami mkoani Mwanza, lami imeharibika", sentiment:"negative", sentimentScore:35, topic:"infrastructure", priority:"high", timestamp:"2025-03-23T14:20:00", region:"Mwanza", channel:"WhatsApp", status:"Pending" },
+            { id:4, text:"Elimu ya bure inasaidia, lakini vitabu vya kutosha havipo.", sentiment:"neutral", sentimentScore:50, topic:"education", priority:"normal", timestamp:"2025-03-23T11:05:00", region:"Mbeya", channel:"SMS", status:"In Progress" },
+            { id:5, text:"Great mobile money services, but network is unstable in rural areas", sentiment:"negative", sentimentScore:40, topic:"connectivity", priority:"high", timestamp:"2025-03-22T19:30:00", region:"Tabora", channel:"Web", status:"Pending" },
+            { id:6, text:"Maji safi yamefika kata yetu! asante serikali", sentiment:"positive", sentimentScore:90, topic:"water", priority:"low", timestamp:"2025-03-22T07:50:00", region:"Dodoma", channel:"SMS", status:"Resolved" }
+        ];
+        persistData();
     }
 
     function addMessage(text, channel, region, isSimulated = false) {
@@ -336,296 +376,436 @@
             priority: analysis.priority,
             timestamp: new Date().toISOString(),
             region: region && REGIONS.includes(region) ? region : REGIONS[Math.floor(Math.random()*REGIONS.length)],
-            channel: channel
+            channel: channel || "Web",
+            status: "Pending"
         };
         messages.unshift(newMsg);
-        saveData();
-        refreshUI();
-        if(!isSimulated) notyf.success("Message submitted!");
-        else notyf.info(`New ${channel} message`);
+        persistData();
+        refreshAll();
+        if(!isSimulated) notyf.success("Message submitted & analysed!");
+        else {
+            notyf.info(`New ${channel} message`);
+            if(analysis.priority === "urgent") notyf.error("URGENT: High priority message detected!");
+        }
     }
 
-    // UI Refresh Functions
-    function refreshUI() {
+    function startSimulation() {
+        if(simulationTimer) clearInterval(simulationTimer);
+        const sampleTexts = [
+            "Bomba la maji limeharibika tena", "Huduma za afya zimeboreka, asante!", "Barabara zetu zimejaa mashimo",
+            "Vitabu vya shule havitoshi", "Umeme umekatika kwa siku tatu", "Network ya simu ni dhaifu hapa",
+            "Maji safi yamefika! shukran", "Hospitali haina dawa za malaria", "Emergency! Water pipe burst",
+            "Dharura! Shimo barabarani", "Elimu ya bure inasaidia", "Miundombinu inahitajika"
+        ];
+        simulationTimer = setInterval(() => {
+            if(!simulationActive) return;
+            const randomText = sampleTexts[Math.floor(Math.random()*sampleTexts.length)];
+            const randomChannel = ["SMS","Voice Call","WhatsApp","Web","Telegram"][Math.floor(Math.random()*5)];
+            const randomRegion = REGIONS[Math.floor(Math.random()*REGIONS.length)];
+            addMessage(randomText, randomChannel, randomRegion, true);
+        }, simulationIntervalMs);
+    }
+
+    function refreshAll() {
         updateStats();
-        renderDashboardCharts();
         renderLiveFeed();
-        renderAnalytics();
-        renderRecentMessages();
+        renderDashboardCharts();
+        renderAnalyticsCharts();
         renderWordCloud();
+        renderRecentContributions();
+        updateAnomalyAlert();
         updateAIInsights();
-        renderRegionSentiment();
+        renderRegionHeatmap();
+        renderSentimentByRegion();
+        renderComparisonAndGauge();
+        if(leafletMap) updateMap();
+        populateRegionFilters();
+        updateRoleUI();
     }
 
     function updateStats() {
-        document.getElementById("statTotal").innerText = messages.length;
-        const avgScore = messages.length ? Math.round(messages.reduce((s,m)=>s+m.sentimentScore,0)/messages.length) : 0;
+        const total = messages.length;
+        const avgScore = total===0?0:Math.round(messages.reduce((s,m)=>s+m.sentimentScore,0)/total);
+        document.getElementById("statTotal").innerText = total;
         document.getElementById("statSentiment").innerText = avgScore;
-        const topics = new Set(messages.map(m=>m.topic));
-        document.getElementById("statTopics").innerText = topics.size;
+        const topicsSet = new Set(messages.map(m=>m.topic));
+        document.getElementById("statTopics").innerText = topicsSet.size;
         const urgentCount = messages.filter(m=>m.priority==="urgent" || m.priority==="high").length;
         document.getElementById("statUrgent").innerText = urgentCount;
-        
-        // top topics
-        const topicCount = new Map();
-        messages.forEach(m=>topicCount.set(m.topic, (topicCount.get(m.topic)||0)+1));
-        const top = Array.from(topicCount.entries()).sort((a,b)=>b[1]-a[1]).slice(0,5);
-        document.getElementById("topTopics").innerHTML = top.map(([t,c])=>`<div><b>${t}</b> <span class="badge">${c}</span></div>`).join('');
-    }
-
-    function renderDashboardCharts() {
-        const pos = messages.filter(m=>m.sentiment==="positive").length;
-        const neg = messages.filter(m=>m.sentiment==="negative").length;
-        const neu = messages.filter(m=>m.sentiment==="neutral").length;
-        const ctx = document.getElementById("sentimentChart")?.getContext("2d");
-        if(window.sentimentPie) window.sentimentPie.data.datasets[0].data = [pos,neg,neu];
-        else if(ctx) {
-            window.sentimentPie = new Chart(ctx, {
-                type: 'doughnut',
-                data: { labels: ['Positive','Negative','Neutral'], datasets: [{ data: [pos,neg,neu], backgroundColor: ['#2a7f6e','#c7362b','#e6a017'] }] },
-                options: { responsive: true }
-            });
-        }
-
-        // weekly trend
-        const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-        const counts = new Array(7).fill(0);
-        const now = new Date();
-        messages.forEach(msg => {
-            const d = new Date(msg.timestamp);
-            const diff = Math.floor((now-d)/(1000*3600*24));
-            if(diff>=0 && diff<7) {
-                const idx = (6 - diff) % 7;
-                counts[idx]++;
-            }
-        });
-        const trendCtx = document.getElementById("trendChart")?.getContext("2d");
-        if(window.trendChartObj) window.trendChartObj.data.datasets[0].data = counts;
-        else if(trendCtx) {
-            window.trendChartObj = new Chart(trendCtx, {
-                type: 'line',
-                data: { labels: days, datasets: [{ label: 'Messages', data: counts, borderColor: '#1f5e4c', fill: false }] },
-                options: { responsive: true }
-            });
-        }
+        const top = [...new Map(messages.map(m=>[m.topic, (messages.filter(x=>x.topic===m.topic).length)]))].sort((a,b)=>b[1]-a[1]).slice(0,5);
+        document.getElementById("topTopicsDashboard").innerHTML = top.map(([t,c])=>`<div class="flex-between"><span>${t.toUpperCase()}</span><span class="badge">${c}</span></div>`).join('');
     }
 
     function renderLiveFeed() {
-        const keyword = document.getElementById("searchKeyword")?.value.toLowerCase() || "";
-        const sentiment = document.getElementById("filterSentiment")?.value;
-        const priority = document.getElementById("filterPriority")?.value;
-        const topic = document.getElementById("filterTopic")?.value;
+        const keyword = document.getElementById("feedKeyword")?.value.toLowerCase() || "";
+        const selectedSentiments = Array.from(document.querySelectorAll(".sentiment-filter:checked")).map(cb=>cb.value);
+        const selectedPriorities = Array.from(document.querySelectorAll(".priority-filter:checked")).map(cb=>cb.value);
+        const topic = document.getElementById("feedTopic")?.value;
+        const region = document.getElementById("feedRegion")?.value;
+        const dateFrom = document.getElementById("feedDateFrom")?.value;
+        const dateTo = document.getElementById("feedDateTo")?.value;
         let filtered = messages.filter(m => {
             if(keyword && !m.text.toLowerCase().includes(keyword)) return false;
-            if(sentiment && m.sentiment !== sentiment) return false;
-            if(priority && m.priority !== priority) return false;
+            if(selectedSentiments.length && !selectedSentiments.includes(m.sentiment)) return false;
+            if(selectedPriorities.length && !selectedPriorities.includes(m.priority)) return false;
             if(topic && m.topic !== topic) return false;
+            if(region && m.region !== region) return false;
+            if(dateFrom && moment(m.timestamp).isBefore(moment(dateFrom))) return false;
+            if(dateTo && moment(m.timestamp).isAfter(moment(dateTo))) return false;
             return true;
         });
-        const container = document.getElementById("messageList");
-        if(filtered.length === 0) { container.innerHTML = "<div>No messages</div>"; return; }
-        container.innerHTML = filtered.map(m => `
-            <div class="message-item priority-${m.priority}">
-                <strong>${m.text}</strong><br>
-                <small>${m.topic} · ${m.priority} · ${moment(m.timestamp).fromNow()} · ${m.region} · ${m.channel}</small>
-            </div>
-        `).join('');
+        const container = document.getElementById("liveFeedContainer");
+        if(filtered.length===0) { container.innerHTML="<div class='card'>No messages match filters</div>"; return; }
+        container.innerHTML = filtered.map(msg=>`<div class="message-item priority-${msg.priority}" data-id="${msg.id}"><div><strong>${msg.text}</strong></div><div style="font-size:0.7rem; margin-top:8px;"><i class="fas fa-tag"></i> ${msg.topic} · <i class="fas fa-flag"></i> ${msg.priority} · <i class="far fa-clock"></i> ${moment(msg.timestamp).fromNow()} · 📍 ${msg.region} · 📞 ${msg.channel}</div></div>`).join('');
+        document.querySelectorAll("#liveFeedContainer .message-item").forEach(el => {
+            el.addEventListener("click", () => {
+                const id = parseInt(el.getAttribute("data-id"));
+                const msg = messages.find(m => m.id === id);
+                if(msg) showMessageModal(msg);
+            });
+        });
     }
 
-    function renderAnalytics() {
-        // Sentiment trend 14 days
-        const labels = [];
-        const posData = [];
-        const negData = [];
-        for(let i=13;i>=0;i--) {
-            const d = new Date(); d.setDate(d.getDate()-i);
-            const dayStr = d.toISOString().slice(0,10);
-            labels.push(dayStr.slice(5));
-            const dayMsgs = messages.filter(m=>m.timestamp.slice(0,10)===dayStr);
-            const total = dayMsgs.length;
-            const pos = dayMsgs.filter(m=>m.sentiment==="positive").length;
-            const neg = dayMsgs.filter(m=>m.sentiment==="negative").length;
-            posData.push(total===0?0:Math.round(pos/total*100));
-            negData.push(total===0?0:Math.round(neg/total*100));
-        }
-        const lineCtx = document.getElementById("trendLineChart")?.getContext("2d");
-        if(window.trendLine) window.trendLine.data.datasets[0].data = posData;
-        else if(lineCtx) {
-            window.trendLine = new Chart(lineCtx, {
-                type: 'line',
-                data: { labels, datasets: [{ label: 'Positive %', data: posData, borderColor: '#2a7f6e' }] },
-                options: { responsive: true }
-            });
-        }
+    function showMessageModal(msg) {
+        selectedMessageId = msg.id;
+        document.getElementById("modalTitle").innerText = `Message #${msg.id}`;
+        document.getElementById("modalText").innerHTML = msg.text;
+        document.getElementById("modalSentiment").innerHTML = `${msg.sentiment} (Score: ${msg.sentimentScore})`;
+        document.getElementById("modalPriority").innerHTML = msg.priority;
+        document.getElementById("modalTopic").innerHTML = msg.topic;
+        document.getElementById("modalRegion").innerHTML = msg.region;
+        document.getElementById("modalChannel").innerHTML = msg.channel;
+        document.getElementById("modalTimestamp").innerHTML = moment(msg.timestamp).format("LLL");
+        document.getElementById("messageStatus").value = msg.status || "Pending";
+        document.getElementById("adminActions").style.display = currentRole === "admin" ? "block" : "none";
+        document.getElementById("messageModal").style.display = "flex";
+    }
+    function closeModal() { document.getElementById("messageModal").style.display = "none"; }
+    function updateStatus() {
+        const newStatus = document.getElementById("messageStatus").value;
+        const msg = messages.find(m => m.id === selectedMessageId);
+        if(msg) { msg.status = newStatus; persistData(); refreshAll(); notyf.success("Status updated"); }
+        closeModal();
+    }
 
-        // Topic distribution bar chart
+    function renderDashboardCharts() {
+        const pos=messages.filter(m=>m.sentiment==="positive").length, neg=messages.filter(m=>m.sentiment==="negative").length, neu=messages.filter(m=>m.sentiment==="neutral").length;
+        const ctxDonut = document.getElementById("dashboardDonut")?.getContext("2d");
+        if(window.donutChart) { window.donutChart.data.datasets[0].data = [pos,neg,neu]; window.donutChart.update(); }
+        else if(ctxDonut){ window.donutChart = new Chart(ctxDonut, { type:'doughnut', data:{ labels:['Positive','Negative','Neutral'], datasets:[{ data:[pos,neg,neu], backgroundColor:['#2a7f6e','#c7362b','#e6a017'] }] }, options:{ responsive:true, plugins:{ legend:{ position:'bottom' } } } }); }
+        const counts = getLast7DaysCounts();
+        const ctxTrend = document.getElementById("trendChartMain")?.getContext("2d");
+        if(window.trendMain) { window.trendMain.data.datasets[0].data = counts; window.trendMain.update(); }
+        else if(ctxTrend){ window.trendMain = new Chart(ctxTrend, { type:'line', data:{ labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets:[{ label:'Interactions', data:counts, borderColor:'#1f5e4c', tension:0.3, fill:false }] } }); }
+    }
+
+    function getLast7DaysCounts() {
+        const counts = new Array(7).fill(0);
+        const now = new Date();
+        messages.forEach(msg=>{
+            const d = new Date(msg.timestamp);
+            const diff = Math.floor((now-d)/(1000*3600*24));
+            if(diff>=0 && diff<7){ const idx = (6 - diff) % 7; counts[idx]++; }
+        });
+        return counts;
+    }
+
+    function renderAnalyticsCharts() {
+        // Topic bar
         const topicCount = new Map();
         messages.forEach(m=>topicCount.set(m.topic, (topicCount.get(m.topic)||0)+1));
         const topics = Array.from(topicCount.keys());
         const counts = topics.map(t=>topicCount.get(t));
-        const barCtx = document.getElementById("topicChart")?.getContext("2d");
-        if(window.topicBar) window.topicBar.data.labels = topics;
-        else if(barCtx) {
-            window.topicBar = new Chart(barCtx, {
-                type: 'bar',
-                data: { labels: topics, datasets: [{ label: 'Messages', data: counts, backgroundColor: '#4b8c7a' }] },
-                options: { responsive: true, plugins: { legend: { display: false } } }
-            });
+        const ctxBar = document.getElementById("topicBarChart")?.getContext("2d");
+        if(window.topicChart) { window.topicChart.data.labels = topics; window.topicChart.data.datasets[0].data = counts; window.topicChart.update(); }
+        else if(ctxBar){ window.topicChart = new Chart(ctxBar, { type:'bar', data:{ labels:topics, datasets:[{ label:'Messages', data:counts, backgroundColor:'#4b8c7a' }] }, options:{ responsive:true, plugins:{ legend:{ display:false } } } }); }
+
+        // Sentiment trend 14 days
+        const trend14 = getSentimentTrend14();
+        const ctxLine = document.getElementById("sentimentTrendLine")?.getContext("2d");
+        if(window.sentimentChart) { window.sentimentChart.data.datasets[0].data = trend14.pos; window.sentimentChart.data.datasets[1].data = trend14.neg; window.sentimentChart.update(); }
+        else if(ctxLine){
+            window.sentimentChart = new Chart(ctxLine, { type:'line', data:{ labels:trend14.labels, datasets:[{ label:'Positive %', data:trend14.pos, borderColor:'#2a7f6e', fill:false },{ label:'Negative %', data:trend14.neg, borderColor:'#c7362b', fill:false }] }, options:{ responsive:true } });
+        }
+
+        // Trending topics
+        const topicsList = ["water","health","infrastructure","education","energy","connectivity"];
+        const topicTrends = topicsList.map(t=>new Array(7).fill(0));
+        const now = new Date();
+        messages.forEach(msg=>{
+            const idx = topicsList.indexOf(msg.topic);
+            if(idx===-1) return;
+            const d = new Date(msg.timestamp);
+            const diff = Math.floor((now-d)/(1000*3600*24));
+            if(diff>=0 && diff<7){
+                const dayIdx = (6 - diff) % 7;
+                topicTrends[idx][dayIdx]++;
+            }
+        });
+        const datasets = topicsList.map((t,i)=>({ label:t, data:topicTrends[i], borderColor:`hsl(${i*50},70%,50%)`, fill:false, tension:0.3 }));
+        const ctxTrending = document.getElementById("trendingTopicsChart")?.getContext("2d");
+        if(window.trendingTopicsChart) { window.trendingTopicsChart.data.datasets = datasets; window.trendingTopicsChart.update(); }
+        else if(ctxTrending){ window.trendingTopicsChart = new Chart(ctxTrending, { type:'line', data:{ labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets }, options:{ responsive:true, plugins:{ legend:{ position:'top' } } } }); }
+
+        // Sentiment by channel
+        const channels = ["SMS","Voice Call","WhatsApp","Web","Telegram","Facebook"];
+        const chData = channels.map(ch => ({ pos:messages.filter(m=>m.channel===ch && m.sentiment==="positive").length, neg:messages.filter(m=>m.channel===ch && m.sentiment==="negative").length }));
+        const ctxCh = document.getElementById("sentimentByChannelChart")?.getContext("2d");
+        if(window.channelChart) { window.channelChart.data.datasets[0].data = chData.map(d=>d.pos); window.channelChart.data.datasets[1].data = chData.map(d=>d.neg); window.channelChart.update(); }
+        else if(ctxCh){
+            window.channelChart = new Chart(ctxCh, { type:'bar', data:{ labels:channels, datasets:[{ label:'Positive', data:chData.map(d=>d.pos), backgroundColor:'#2a7f6e' },{ label:'Negative', data:chData.map(d=>d.neg), backgroundColor:'#c7362b' }] }, options:{ responsive:true, plugins:{ legend:{ position:'top' } }, scales:{ x:{ ticks:{ maxRotation:45, minRotation:45 } } } } });
+        }
+
+        // Radar chart
+        const urgencyWeight = { urgent:5, high:3, normal:1, low:0.5 };
+        const radarScores = topicsList.map(topic => {
+            const msgs = messages.filter(m=>m.topic===topic);
+            const totalWeight = msgs.reduce((sum,m)=> sum + (urgencyWeight[m.priority]||1), 0);
+            return msgs.length===0?0:Math.min(10, totalWeight/msgs.length);
+        });
+        const ctxRadar = document.getElementById("radarChart")?.getContext("2d");
+        if(window.radarChart) { window.radarChart.data.datasets[0].data = radarScores; window.radarChart.update(); }
+        else if(ctxRadar){
+            window.radarChart = new Chart(ctxRadar, { type:'radar', data:{ labels:topicsList.map(t=>t.toUpperCase()), datasets:[{ label:'Urgency Score', data:radarScores, backgroundColor:'rgba(31,94,76,0.2)', borderColor:'#1f5e4c' }] }, options:{ responsive:true, scales:{ r:{ beginAtZero:true, max:10 } } } });
         }
     }
 
-    function renderRecentMessages() {
-        const recent = messages.slice(0,5);
-        document.getElementById("recentMsgs").innerHTML = recent.map(m=>`
-            <div class="message-item priority-${m.priority}">
-                <strong>${m.text.substring(0,80)}</strong><br>
-                <small>${moment(m.timestamp).fromNow()} · ${m.channel}</small>
-            </div>
-        `).join('');
+    function getSentimentTrend14() {
+        let labels=[], posArr=[], negArr=[];
+        for(let i=13;i>=0;i--){
+            const d = new Date(); d.setDate(new Date().getDate()-i);
+            const dayStr = d.toISOString().slice(0,10);
+            labels.push(dayStr.slice(5));
+            const dayMsgs = messages.filter(m=>m.timestamp.slice(0,10)===dayStr);
+            const total = dayMsgs.length;
+            posArr.push(total===0?0:Math.round((dayMsgs.filter(m=>m.sentiment==="positive").length/total)*100));
+            negArr.push(total===0?0:Math.round((dayMsgs.filter(m=>m.sentiment==="negative").length/total)*100));
+        }
+        return { labels, pos:posArr, neg:negArr };
     }
 
     function renderWordCloud() {
         const wordFreq = new Map();
         messages.forEach(m => {
             m.text.toLowerCase().split(/\s+/).forEach(w => {
-                if(w.length>2 && !["the","and","for","this","that","with","from","have","were","kwa","na","ya","wa"].includes(w))
+                if(w.length>2 && !["the","and","for","this","that","with","from","have","were","kwa","na","ya","wa","kwa"].includes(w))
                     wordFreq.set(w, (wordFreq.get(w)||0)+1);
             });
         });
-        const sorted = Array.from(wordFreq.entries()).sort((a,b)=>b[1]-a[1]).slice(0,25);
-        const container = document.getElementById("wordCloud");
-        container.innerHTML = sorted.map(([w,f])=>`<span style="font-size:${12+f*2}px; cursor:pointer;" data-word="${w}">${w}</span>`).join('');
-        // attach click to filter
+        const sorted = Array.from(wordFreq.entries()).sort((a,b)=>b[1]-a[1]).slice(0,30);
+        const container = document.getElementById("wordCloudContainer");
+        container.innerHTML = sorted.map(([w,f])=>`<span style="font-size:${12+f*1.5}px; margin:4px; cursor:pointer;" data-word="${w}">${w}</span>`).join('');
         container.querySelectorAll("span").forEach(span => {
             span.addEventListener("click", () => {
-                document.getElementById("searchKeyword").value = span.getAttribute("data-word");
+                document.getElementById("feedKeyword").value = span.getAttribute("data-word");
                 document.querySelector(".nav-item[data-page='livefeed']").click();
-                refreshUI();
+                notyf.info(`Filtering by "${span.getAttribute("data-word")}"`);
             });
         });
     }
 
-    function renderRegionSentiment() {
-        const regionData = {};
-        REGIONS.forEach(r => regionData[r] = { pos:0, neg:0, total:0 });
-        messages.forEach(m => {
-            if(regionData[m.region]) {
-                regionData[m.region].total++;
-                if(m.sentiment === "positive") regionData[m.region].pos++;
-                if(m.sentiment === "negative") regionData[m.region].neg++;
-            }
-        });
-        const container = document.getElementById("regionSentiment");
-        container.innerHTML = REGIONS.map(r => {
-            const d = regionData[r];
-            const posP = d.total?Math.round(d.pos/d.total*100):0;
-            const negP = d.total?Math.round(d.neg/d.total*100):0;
-            return `<div class="card"><b>${r}</b><div>👍 ${posP}%</div><div>👎 ${negP}%</div><div>📊 ${d.total}</div></div>`;
-        }).join('');
+    function renderRecentContributions() {
+        const recent = messages.slice(0,5);
+        document.getElementById("recentContributions").innerHTML = recent.map(m=>`<div class="message-item priority-${m.priority}"><strong>${m.text.substring(0,80)}</strong><div style="font-size:0.7rem">${moment(m.timestamp).fromNow()} · ${m.channel} · Status: ${m.status||"Pending"}</div></div>`).join('');
+    }
+
+    function updateAnomalyAlert() {
+        const waterNeg = messages.filter(m=>m.topic==="water" && m.sentiment==="negative").length;
+        const urgent = messages.filter(m=>m.priority==="urgent").length;
+        const banner = document.getElementById("anomalyBanner");
+        if(waterNeg>3 || urgent>2) banner.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ⚠️ AI alert: High volume of water complaints or urgent messages. Immediate action recommended.`;
+        else banner.innerHTML = `<i class="fas fa-chart-line"></i> Real‑time monitoring: no critical anomalies detected.`;
     }
 
     function updateAIInsights() {
         const totalNeg = messages.filter(m=>m.sentiment==="negative").length;
-        const negRatio = messages.length?Math.round(totalNeg/messages.length*100):0;
+        const negRatio = messages.length?Math.round((totalNeg/messages.length)*100):0;
         const topTopic = [...new Map(messages.map(m=>[m.topic, (messages.filter(x=>x.topic===m.topic).length)]))].sort((a,b)=>b[1]-a[1])[0];
         const urgentCount = messages.filter(m=>m.priority==="urgent").length;
-        document.getElementById("aiInsights").innerHTML = `
-            <p>🔍 Negative sentiment ratio: ${negRatio}%</p>
-            <p>📈 Top issue: ${topTopic?topTopic[0]:'general'}</p>
-            <p>🚨 Urgent messages: ${urgentCount}</p>
-            <p>🤖 AI recommends: ${urgentCount>0?'Immediate response teams needed':'Continue monitoring'}</p>
-        `;
+        document.getElementById("aiInsightsText").innerHTML = `<p>🔍 <strong>Predictive summary:</strong> ${topTopic?topTopic[0].toUpperCase():"General"} is the dominant issue. Negative sentiment ratio: ${negRatio}%.</p><p>📈 Forecast: Water & infrastructure complaints may rise by 12% next week. Proactive resource allocation advised.</p><p>🤖 AI recommends: ${urgentCount>0 ? `Deploy rapid response teams immediately to address ${urgentCount} urgent issues.` : "Continue monitoring; no urgent action required."}</p>`;
     }
 
-    // Simulation
-    function startSimulation() {
-        if(simulationInterval) clearInterval(simulationInterval);
-        const sampleTexts = [
-            "Bomba la maji limeharibika", "Huduma za afya zimeboreka", "Barabara zetu zimejaa mashimo",
-            "Vitabu vya shule havitoshi", "Umeme umekatika", "Network ni dhaifu",
-            "Maji safi yamefika! shukran", "Hospitali haina dawa", "Emergency water pipe burst"
-        ];
-        simulationInterval = setInterval(() => {
-            if(!simulationActive) return;
-            const randomText = sampleTexts[Math.floor(Math.random()*sampleTexts.length)];
-            const randomChannel = ["SMS","Voice","WhatsApp","Web"][Math.floor(Math.random()*4)];
-            const randomRegion = REGIONS[Math.floor(Math.random()*REGIONS.length)];
-            addMessage(randomText, randomChannel, randomRegion, true);
-        }, 10000);
+    function renderRegionHeatmap() {
+        const container = document.getElementById("regionHeatmapDashboard");
+        if(container){
+            const regionCount = new Map();
+            messages.forEach(m=>regionCount.set(m.region, (regionCount.get(m.region)||0)+1));
+            container.innerHTML = REGIONS.map(reg=>{ const cnt=regionCount.get(reg)||0; let bg=cnt>=3?'#1f5e4c':(cnt>=1?'#84b9a5':'#e2e8f0'); return `<span style="background:${bg}; padding:6px 12px; border-radius:40px;">${reg} (${cnt})</span>`; }).join('');
+        }
     }
 
-    // Navigation
-    function initNavigation() {
-        document.querySelectorAll(".nav-item").forEach(item => {
-            item.addEventListener("click", () => {
-                const pageId = item.getAttribute("data-page");
-                document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
-                item.classList.add("active");
-                document.querySelectorAll(".page").forEach(p=>p.classList.remove("active-page"));
-                document.getElementById(pageId).classList.add("active-page");
-                refreshUI();
-            });
+    function renderSentimentByRegion() {
+        const regionSent = Object.fromEntries(REGIONS.map(r=>[r,{pos:0,neg:0,total:0}]));
+        messages.forEach(m=>{ if(regionSent[m.region]){ regionSent[m.region].total++; if(m.sentiment==="positive") regionSent[m.region].pos++; if(m.sentiment==="negative") regionSent[m.region].neg++; } });
+        document.getElementById("sentimentByRegion").innerHTML = REGIONS.map(r=>{ const d=regionSent[r]; const posP=d.total?Math.round((d.pos/d.total)*100):0; const negP=d.total?Math.round((d.neg/d.total)*100):0; return `<div class="card"><b>${r}</b><div>👍 ${posP}% positive</div><div>👎 ${negP}% negative</div><div>📊 ${d.total} msgs</div></div>`; }).join('');
+    }
+
+    function renderComparisonAndGauge() {
+        const now = moment();
+        const currentWeek = messages.filter(m => moment(m.timestamp).isAfter(now.clone().subtract(7,'days')));
+        const previousWeek = messages.filter(m => moment(m.timestamp).isBetween(now.clone().subtract(14,'days'), now.clone().subtract(7,'days')));
+        document.getElementById("comparisonStats").innerHTML = `<div><b>Current week</b><br>${currentWeek.length} msgs<br>Avg Sentiment: ${currentWeek.length?Math.round(currentWeek.reduce((s,m)=>s+m.sentimentScore,0)/currentWeek.length):0}</div>
+            <div><b>Previous week</b><br>${previousWeek.length} msgs<br>Avg Sentiment: ${previousWeek.length?Math.round(previousWeek.reduce((s,m)=>s+m.sentimentScore,0)/previousWeek.length):0}</div>`;
+        const avgScore = messages.length?Math.round(messages.reduce((s,m)=>s+m.sentimentScore,0)/messages.length):50;
+        document.getElementById("gaugeContainer").innerHTML = `${avgScore}%`;
+        document.getElementById("gaugeFill").style.width = `${avgScore}%`;
+    }
+
+    function updateSystemMetrics() {
+        document.getElementById("apiLatency").innerText = Math.floor(80 + Math.random()*40);
+        document.getElementById("apiFill").style.width = (parseInt(document.getElementById("apiLatency").innerText)/500*100)+"%";
+        document.getElementById("uptime").innerText = (99.9 + Math.random()*0.09).toFixed(2);
+        document.getElementById("uptimeFill").style.width = document.getElementById("uptime").innerText+"%";
+        document.getElementById("throughput").innerText = Math.floor(200 + Math.random()*100);
+        const ctx = document.getElementById("systemLoadChart")?.getContext("2d");
+        const loadData = Array(12).fill().map(() => Math.random() * 100);
+        if(window.loadChart) { window.loadChart.data.datasets[0].data = loadData; window.loadChart.update(); }
+        else if(ctx){ window.loadChart = new Chart(ctx, { type:'line', data:{ labels: Array(12).fill().map((_,i)=>i+'h'), datasets:[{ label:'CPU %', data:loadData, borderColor:'#1f5e4c', fill:false }] }, options:{ responsive:true, plugins:{ legend:{ display:false } } } }); }
+    }
+
+    function initMap() {
+        const mapDiv = document.getElementById("leafletMap");
+        if(!mapDiv) return;
+        leafletMap = L.map(mapDiv).setView([-6.369, 34.888], 6);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(leafletMap);
+        markerCluster = L.markerClusterGroup();
+        leafletMap.addLayer(markerCluster);
+        updateMap();
+    }
+    function updateMap() {
+        if(!markerCluster) return;
+        markerCluster.clearLayers();
+        const regionCoords = { "Dar es Salaam":[-6.792,39.208], "Arusha":[-3.386,36.682], "Mwanza":[-2.516,32.917], "Mbeya":[-8.907,33.466], "Dodoma":[-6.162,35.752], "Zanzibar":[-6.165,39.202], "Tanga":[-5.069,39.099], "Morogoro":[-6.826,37.671], "Kilimanjaro":[-3.067,37.355], "Tabora":[-5.016,32.826] };
+        const regionCount = new Map(); messages.forEach(m=>regionCount.set(m.region, (regionCount.get(m.region)||0)+1));
+        const heatPoints = [];
+        for(let [reg, coord] of Object.entries(regionCoords)){
+            let count = regionCount.get(reg)||0;
+            if(count>0){
+                L.marker(coord).bindPopup(`<b>${reg}</b><br>${count} messages`).addTo(markerCluster);
+                for(let i=0;i<count;i++) heatPoints.push([coord[0], coord[1], 0.5 + count/10]);
+            }
+        }
+        if(heatLayer) leafletMap.removeLayer(heatLayer);
+        heatLayer = L.heatLayer(heatPoints, { radius: 25, blur: 15 }).addTo(leafletMap);
+    }
+
+    function populateRegionFilters() {
+        const select = document.getElementById("feedRegion");
+        if(select && select.children.length <= 1) { select.innerHTML = '<option value="">All regions</option>' + REGIONS.map(r=>`<option>${r}</option>`).join(''); }
+        const datalist = document.getElementById("regionList");
+        if(datalist) datalist.innerHTML = REGIONS.map(r=>`<option>${r}</option>`).join('');
+    }
+
+    async function exportDashboardPDF() {
+        const dashboard = document.getElementById("dashboard");
+        const canvas = await html2canvas(dashboard, { scale: 2 });
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('landscape');
+        pdf.addImage(imgData, 'PNG', 0, 0, 297, 210);
+        pdf.save(`thea_dashboard_${Date.now()}.pdf`);
+        notyf.success("Dashboard exported as PDF");
+    }
+
+    function generateReport() {
+        const type = document.getElementById("reportType").value;
+        const format = document.getElementById("reportFormat").value;
+        if(format === "PDF (Dashboard)") { exportDashboardPDF(); return; }
+        let data = { generated: new Date().toISOString(), type, total: messages.length, messages: messages.slice(0,100) };
+        if(format === "Excel (XLSX)"){
+            const wsData = [["id","text","sentiment","sentimentScore","topic","priority","timestamp","region","channel","status"]];
+            messages.forEach(m => wsData.push([m.id, m.text, m.sentiment, m.sentimentScore, m.topic, m.priority, m.timestamp, m.region, m.channel, m.status]));
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "THEA_Data");
+            XLSX.writeFile(wb, `thea_report_${Date.now()}.xlsx`);
+            notyf.success("Excel report generated");
+            return;
+        }
+        let output = format === "CSV" ? 
+            [["id","text","sentiment","sentimentScore","topic","priority","timestamp","region","channel","status"], ...messages.map(m=>[m.id,m.text,m.sentiment,m.sentimentScore,m.topic,m.priority,m.timestamp,m.region,m.channel,m.status])].map(row=>row.join(",")).join("\n") :
+            JSON.stringify(data, null, 2);
+        const previewDiv = document.getElementById("reportPreview");
+        previewDiv.innerHTML = `<pre style="max-height:300px; overflow:auto;">${output.substring(0,1500)}</pre><button id="downloadReportBtn" class="btn" style="margin-top:8px;">Download ${format}</button>`;
+        document.getElementById("downloadReportBtn")?.addEventListener("click",()=>{
+            const blob = new Blob([output], {type: format==="CSV" ? "text/csv" : "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a"); a.href = url; a.download = `thea_report_${Date.now()}.${format.toLowerCase()}`; a.click(); URL.revokeObjectURL(url);
         });
     }
 
-    // Theme
-    function initTheme() {
-        const stored = localStorage.getItem("theme");
-        if(stored === "dark") document.body.classList.add("dark");
-        document.getElementById("themeToggle").addEventListener("click", () => {
-            document.body.classList.toggle("dark");
-            localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
-        });
-    }
-
-    // Event handlers
-    document.getElementById("submitMessage")?.addEventListener("click", () => {
-        const text = document.getElementById("newMessage").value;
-        const channel = document.getElementById("msgChannel").value;
-        const region = document.getElementById("msgRegion").value;
-        if(!text.trim()) { notyf.error("Please type a message"); return; }
-        addMessage(text, channel, region, false);
-        document.getElementById("newMessage").value = "";
-        document.getElementById("msgRegion").value = "";
-    });
-
-    document.getElementById("exportData")?.addEventListener("click", () => {
+    function exportAllData() {
         const dataStr = JSON.stringify(messages, null, 2);
-        const blob = new Blob([dataStr], {type: "application/json"});
+        const blob = new Blob([dataStr], {type:"application/json"});
         const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `thea_data_${Date.now()}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
+        const a = document.createElement("a"); a.href = url; a.download = `thea_all_data_${Date.now()}.json`; a.click(); URL.revokeObjectURL(url);
         notyf.success("Data exported");
+    }
+    function importData(file) {
+        const reader = new FileReader();
+        reader.onload = e => { try { const imported = JSON.parse(e.target.result); if(Array.isArray(imported)) { messages = imported; persistData(); refreshAll(); notyf.success(`Imported ${messages.length} messages`); } } catch(err) { notyf.error("Invalid JSON file"); } };
+        reader.readAsText(file);
+    }
+    function toggleSimulation() { simulationActive = !simulationActive; document.getElementById("toggleSimulationBtn").innerHTML = simulationActive ? '<i class="fas fa-pause"></i> Pause Simulation' : '<i class="fas fa-play"></i> Start Simulation'; notyf.info(simulationActive ? "Simulation resumed" : "Simulation paused"); }
+
+    function initTheme() { if(localStorage.getItem("thea_theme")==="dark") document.body.classList.add("dark"); document.getElementById("themeToggle").addEventListener("click",()=>{ document.body.classList.toggle("dark"); localStorage.setItem("thea_theme", document.body.classList.contains("dark") ? "dark" : "light"); }); }
+    function initNav() { document.querySelectorAll(".nav-item").forEach(nav=>{ nav.addEventListener("click",()=>{ const pageId = nav.getAttribute("data-page"); document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active")); nav.classList.add("active"); document.querySelectorAll(".page").forEach(p=>p.classList.remove("active-page")); document.getElementById(pageId).classList.add("active-page"); if(pageId === "analytics") setTimeout(()=>leafletMap?.invalidateSize(), 100); refreshAll(); }); }); }
+    function initLang() { document.getElementById("langSwitch").addEventListener("click",()=>{ currentLang = currentLang === "en" ? "sw" : "en"; const t = translations[currentLang]; document.getElementById("msgText").placeholder = t.placeholder; document.getElementById("submitMsgBtn").innerHTML = `<i class="fas fa-paper-plane"></i> ${t.submit}`; document.getElementById("langSwitch").innerHTML = `<i class="fas fa-language"></i> ${t.langLabel}`; }); }
+    function initRole() { document.querySelectorAll(".role-btn").forEach(btn=>{ btn.addEventListener("click",()=>{ currentRole = btn.getAttribute("data-role"); document.querySelectorAll(".role-btn").forEach(b=>b.classList.remove("active")); btn.classList.add("active"); updateRoleUI(); notyf.info(`Switched to ${currentRole} view`); refreshAll(); }); }); }
+    function updateRoleUI() { document.querySelectorAll("#adminActions").forEach(el=>el.style.display = currentRole === "admin" ? "block" : "none"); }
+    function initChat() {
+        document.getElementById("chatToggle").addEventListener("click",()=>document.getElementById("chatWidget").classList.toggle("active"));
+        document.getElementById("chatHeader").addEventListener("click",()=>document.getElementById("chatWidget").classList.toggle("active"));
+        document.getElementById("chatSend").addEventListener("click",()=>{
+            const q = document.getElementById("chatInput").value.trim(); if(!q) return;
+            const chatMsgs = document.getElementById("chatMessages");
+            chatMsgs.innerHTML += `<div><strong>You:</strong> ${q}</div>`;
+            document.getElementById("chatInput").value = "";
+            setTimeout(()=>{
+                let ans = "I'm THEA Assistant. Ask about: total messages, sentiment score, urgent alerts.";
+                if(q.toLowerCase().includes("total")) ans = `Total messages: ${messages.length}`;
+                else if(q.toLowerCase().includes("sentiment")) ans = `Average sentiment: ${messages.length?Math.round(messages.reduce((s,m)=>s+m.sentimentScore,0)/messages.length):50}/100`;
+                else if(q.toLowerCase().includes("urgent")) ans = `Urgent messages: ${messages.filter(m=>m.priority==="urgent").length}`;
+                chatMsgs.innerHTML += `<div><strong>🤖 THEA:</strong> ${ans}</div>`;
+                chatMsgs.scrollTop = chatMsgs.scrollHeight;
+            }, 200);
+        });
+    }
+
+    // Event listeners
+    document.getElementById("submitMsgBtn")?.addEventListener("click",()=>{
+        const text = document.getElementById("msgText").value, channel = document.getElementById("msgChannel").value, region = document.getElementById("msgRegion").value;
+        if(!text.trim()){ notyf.error("Please enter a message"); return; }
+        addMessage(text, channel, region, false);
+        document.getElementById("msgText").value = ""; document.getElementById("msgRegion").value = "";
     });
+    document.querySelectorAll(".sentiment-filter, .priority-filter").forEach(cb=>cb.addEventListener("change",()=>renderLiveFeed()));
+    document.getElementById("feedTopic")?.addEventListener("change",()=>renderLiveFeed());
+    document.getElementById("feedRegion")?.addEventListener("change",()=>renderLiveFeed());
+    document.getElementById("feedDateFrom")?.addEventListener("change",()=>renderLiveFeed());
+    document.getElementById("feedDateTo")?.addEventListener("change",()=>renderLiveFeed());
+    document.getElementById("feedKeyword")?.addEventListener("input",()=>renderLiveFeed());
+    document.getElementById("generateReportBtn")?.addEventListener("click",generateReport);
+    document.getElementById("exportDataBtn")?.addEventListener("click",exportAllData);
+    document.getElementById("resetDataBtn")?.addEventListener("click",()=>{ resetToDemo(); refreshAll(); notyf.success("Reset to demo data"); });
+    document.getElementById("importDataBtn")?.addEventListener("click",()=>document.getElementById("importFile").click());
+    document.getElementById("importFile")?.addEventListener("change",e=>{ if(e.target.files[0]) importData(e.target.files[0]); });
+    document.getElementById("toggleSimulationBtn")?.addEventListener("click",toggleSimulation);
+    document.getElementById("simulationInterval")?.addEventListener("change",e=>{ simulationIntervalMs = parseInt(e.target.value); startSimulation(); });
+    document.querySelector(".close-modal")?.addEventListener("click",closeModal);
+    document.getElementById("updateStatusBtn")?.addEventListener("click",updateStatus);
+    window.addEventListener("click", (e) => { if(e.target === document.getElementById("messageModal")) closeModal(); });
 
-    document.getElementById("resetData")?.addEventListener("click", () => {
-        messages = [];
-        saveData();
-        loadDemoData();
-        refreshUI();
-        notyf.success("Reset to demo data");
-    });
-
-    document.getElementById("toggleSim")?.addEventListener("click", () => {
-        simulationActive = !simulationActive;
-        document.getElementById("toggleSim").innerText = simulationActive ? "Pause Simulation" : "Start Simulation";
-        document.getElementById("simStatus").innerText = simulationActive ? "Active" : "Paused";
-        notyf.info(simulationActive ? "Simulation resumed" : "Simulation paused");
-    });
-
-    document.getElementById("searchKeyword")?.addEventListener("input", () => renderLiveFeed());
-    document.getElementById("filterSentiment")?.addEventListener("change", () => renderLiveFeed());
-    document.getElementById("filterPriority")?.addEventListener("change", () => renderLiveFeed());
-    document.getElementById("filterTopic")?.addEventListener("change", () => renderLiveFeed());
-
-    loadDemoData();
-    initNavigation();
+    loadData();
+    initMap();
     initTheme();
-    refreshUI();
+    initNav();
+    initLang();
+    initRole();
+    initChat();
     startSimulation();
+    refreshAll();
+    setInterval(()=>{ refreshAll(); }, 8000);
 </script>
 </body>
 </html>
